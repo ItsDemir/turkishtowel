@@ -1,0 +1,21 @@
+{{> header}}
+
+    <div class="container page-top">
+      <h1 class="page-title">The Collection</h1>
+      <p class="page-sub">Every towel woven to order. Ships in 5 to 7 days.</p>
+
+      <div class="filter" role="group" aria-label="Filter by colour" data-filter-group>
+        <button class="swatch swatch--filter" type="button" data-filter="neutral" aria-pressed="false" aria-label="Neutral tones" title="Neutral tones" style="--swatch:#d6caad"></button>
+        <button class="swatch swatch--filter" type="button" data-filter="blue" aria-pressed="false" aria-label="Blues" title="Blues" style="--swatch:#4d5a78"></button>
+        <button class="swatch swatch--filter" type="button" data-filter="green" aria-pressed="false" aria-label="Greens" title="Greens" style="--swatch:#98a387"></button>
+        <button class="swatch swatch--filter" type="button" data-filter="warm" aria-pressed="false" aria-label="Warm tones" title="Warm tones" style="--swatch:#c28a79"></button>
+        <button class="swatch swatch--filter" type="button" data-filter="dark" aria-pressed="false" aria-label="Darks" title="Darks" style="--swatch:#3b3a37"></button>
+        <button class="filter__clear" type="button" data-filter-clear hidden>Clear</button>
+      </div>
+      <p class="visually-hidden" role="status" data-filter-status></p>
+
+      <ul class="grid" data-grid>{{{products}}}
+      </ul>
+    </div>
+
+{{> footer}}

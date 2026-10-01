@@ -1,0 +1,60 @@
+{{> header}}
+
+    <section class="hero" aria-labelledby="hero-title">
+      {{{heroImage}}}
+      <div class="hero__content container">
+        <p class="eyebrow">Woven in the Aegean</p>
+        <h1 class="hero__title" id="hero-title">The towel you'll use for twenty years.</h1>
+        <p class="hero__lead">Hand-loomed peshtemal from Denizli, Turkey. Each one woven by the same family for three generations.</p>
+        <a class="btn btn--ghost" href="/collection">Shop the collection</a>
+      </div>
+    </section>
+
+    <section class="section arrivals" aria-labelledby="arrivals-title">
+      <div class="container">
+        <h2 class="section-note" id="arrivals-title">New arrivals</h2>
+        <ul class="strip">{{{newArrivals}}}
+        </ul>
+      </div>
+    </section>
+
+    <section class="section story" id="about" aria-label="About Pamuq">
+      <div class="container story__grid">
+        <div class="story__media media" style="--tone-a:#3b3426;--tone-b:#3b3426">
+          {{{storyImage}}}
+        </div>
+        <div class="story__text">
+          <blockquote class="pull-quote">
+            <p>We don't weave faster. We weave better.</p>
+          </blockquote>
+          <p class="story__body">Every peshtemal is woven on a shuttle loom in Denizli, one at a time and at the pace the cotton asks for. The family checks each length by hand, and it leaves the workshop only when they would use it themselves.</p>
+          <a class="text-link text-link--accent" href="#craft">About our craft <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="materials" id="craft" aria-labelledby="craft-title">
+      <h2 class="visually-hidden" id="craft-title">What goes into every towel</h2>
+      <div class="container">
+        <ul class="facts">
+          <li class="fact">
+            <span class="fact__label">100% Aegean cotton</span>
+            <span class="fact__text">Long-staple fibre from the river valleys</span>
+          </li>
+          <li class="fact">
+            <span class="fact__label">Natural dye only</span>
+            <span class="fact__text">Plant and mineral colour, never synthetic</span>
+          </li>
+          <li class="fact">
+            <span class="fact__label">Hand-loomed</span>
+            <span class="fact__text">Woven on shuttle looms, one towel at a time</span>
+          </li>
+          <li class="fact">
+            <span class="fact__label">Washes softer</span>
+            <span class="fact__text">Gains softness and depth with every wash</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+{{> footer}}

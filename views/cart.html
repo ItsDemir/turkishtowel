@@ -1,0 +1,36 @@
+{{> header}}
+
+    <section class="cart container" data-cart-view="page">
+      <h1 class="page-title page-title--cart" data-cart-title>Your bag</h1>
+
+      <div data-cart-filled hidden>
+        <ul class="lines" data-cart-items></ul>
+
+        <div class="cart__summary">
+          <p class="summary-line"><span>Subtotal</span><span data-subtotal>£0</span></p>
+          <p class="delivery-note" data-delivery-note></p>
+          <button class="btn btn--solid" type="button" data-checkout>Proceed to checkout</button>
+          <p class="form-message" role="alert" data-checkout-message></p>
+        </div>
+      </div>
+
+      <div class="empty" data-cart-empty hidden>
+        <p class="empty__title">Your bag is empty.</p>
+        <a class="text-link" href="/collection">Back to the collection</a>
+      </div>
+
+      <noscript>
+        <p class="form-message">Your bag needs JavaScript to be shown. Please turn it on and reload the page.</p>
+      </noscript>
+
+      <section class="cart__info" id="delivery" aria-labelledby="delivery-title">
+        <h2 class="cart__info-title" id="delivery-title">Delivery and returns</h2>
+        <ul class="bullets">
+          <li>Every towel is woven to order and ships within 5 to 7 days</li>
+          <li>Free delivery over {{freeDeliveryLabel}}, otherwise {{deliveryFeeLabel}}</li>
+          <li>Returns accepted within 30 days, unwashed and in the original wrapping</li>
+        </ul>
+      </section>
+    </section>
+
+{{> footer}}
