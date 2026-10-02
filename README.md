@@ -111,6 +111,30 @@ Unsplash resizes pictures on request, but local files are served as they are, so
 5. **Keep the database.** SQLite is a single file, so it needs storage that survives a restart. Create a volume or persistent disk, mount it at `/data`, and set `DATABASE_PATH=/data/pamuq.db`. On Fly.io that is `fly volumes create`, on Railway a Volume, on Render a Disk. Without one, orders disappear on every deploy. Back it up by copying the file, or with `sqlite3 pamuq.db ".backup backup.db"`.
 6. **First start.** The server seeds an empty database by itself. Run a test purchase in live mode with a real card, then refund it from the Dashboard.
 
+## Previewing on Vercel
+
+This is for looking at the site at a shareable address. It is not a way to run the shop.
+
+Vercel runs the server as short-lived functions with no persistent disk. On Vercel the SQLite file therefore lives in the temporary folder, each function instance gets its own copy, and a copy starts empty and is seeded again whenever an instance starts. Pages, product browsing, the bag and the drawer all work. Orders, stock levels and newsletter sign ups are not kept, and a test payment can be recorded twice if two instances handle it. Do not point live Stripe keys at a preview. A real shop on Vercel needs its data in a hosted database, which is a separate change.
+
+To deploy a preview from your own machine, which uses the branch you have checked out and needs no GitHub connection:
+
+```bash
+git checkout claude/pamuq-ecommerce-store-9f0ptu
+npx vercel
+```
+
+Log in when asked, accept the defaults, and open the preview address it prints.
+
+To deploy from the Vercel dashboard instead, choose Add New, then Project, import this GitHub repository, leave the framework preset as Other, and deploy. Vercel builds every branch as a preview, so open the deployment for `claude/pamuq-ecommerce-store-9f0ptu`. The `main` branch does not contain the store yet, so a build of `main` will not show it until the branch is merged.
+
+Good to know:
+
+* No settings are required. `SITE_URL` falls back to the address Vercel gives the deployment.
+* To try checkout on a preview, add a test `STRIPE_SECRET_KEY` and a `RESEND_API_KEY` under Environment Variables in the project settings. `STRIPE_WEBHOOK_SECRET` is not needed, because the confirmation page records the order and sends the email by itself.
+* Vercel can put a login in front of preview addresses (Deployment Protection). To share the link with someone outside your team, turn that off for previews or create a shareable link in the project settings.
+* How it is wired: `api/index.js` hands the Express app to Vercel as one function, and `vercel.json` sends every request that is not a file in `public/` to it. The entry point also removes the request and response helpers that Vercel adds, so Express reads request bodies and sends responses the way it does everywhere else.
+
 ## Project layout
 
 ```
@@ -121,6 +145,8 @@ email.js               the order confirmation email and the Resend call
 format.js              price formatting and HTML escaping shared by the two above
 package.json
 .env.example
+api/index.js           the entry point Vercel uses for a preview
+vercel.json            sends requests to that entry point
 public/
   css/main.css         every style on the site
   js/cart.js           the bag, the header count and the drawer
@@ -134,7 +160,7 @@ views/
   error.html           used for pages that are not found
 ```
 
-Two small additions to the layout in the brief: `format.js`, because the server and the email both need the same price formatting and escaping, and `js/site.js`, for behaviour that every page shares.
+A few small additions to the layout in the brief: `format.js`, because the server and the email both need the same price formatting and escaping, `js/site.js`, for behaviour that every page shares, and `api/index.js` with `vercel.json` for the Vercel preview.
 
 ## Design notes
 

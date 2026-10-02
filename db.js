@@ -3,12 +3,16 @@
 require('dotenv').config({ quiet: true });
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const DB_PATH = process.env.DATABASE_PATH
-  ? path.resolve(process.env.DATABASE_PATH)
-  : path.join(__dirname, 'pamuq.db');
+// On Vercel the project folder is read-only and only the temporary folder can be written
+// to. A database kept there lives for as long as one function instance does, which is
+// enough to look at the site but not to keep orders. See the README.
+const DEFAULT_DB_PATH = process.env.VERCEL ? path.join(os.tmpdir(), 'pamuq.db') : path.join(__dirname, 'pamuq.db');
+
+const DB_PATH = process.env.DATABASE_PATH ? path.resolve(process.env.DATABASE_PATH) : DEFAULT_DB_PATH;
 
 // Used when a colour in the seed data does not say how many units are in stock.
 const DEFAULT_STOCK = 40;

@@ -12,7 +12,9 @@ const { sendOrderConfirmation } = require('./email');
 const { escapeHtml, formatPrice, firstName } = require('./format');
 
 const PORT = Number(process.env.PORT) || 3000;
-const SITE_URL = (process.env.SITE_URL || `http://localhost:${PORT}`).replace(/\/+$/, '');
+// On Vercel, VERCEL_URL is the address of the deployment being served.
+const DEFAULT_SITE_URL = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${PORT}`;
+const SITE_URL = (process.env.SITE_URL || DEFAULT_SITE_URL).replace(/\/+$/, '');
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 const CURRENCY = 'gbp';
@@ -710,24 +712,30 @@ app.use((error, req, res, next) => {
 
 if (db.countProducts() === 0) require('./seed').seed();
 
-const server = app.listen(PORT, () => {
-  process.stdout.write(`Pamuq is running at http://localhost:${PORT}\n`);
-});
-
-server.on('error', (error) => {
-  console.error(error.code === 'EADDRINUSE' ? `Port ${PORT} is already in use. Set PORT in .env to another number.` : error);
-  process.exit(1);
-});
-
-for (const signal of ['SIGINT', 'SIGTERM']) {
-  process.on(signal, () => {
-    server.close(() => {
-      db.close();
-      process.exit(0);
-    });
-    server.closeIdleConnections();
-    // Browsers keep connections open, so requests in flight get a few seconds and the
-    // rest are cut.
-    setTimeout(() => server.closeAllConnections(), 5000).unref();
+// Started with `node server.js` the app listens on a port. When api/index.js requires it
+// on Vercel it is handed over as a function instead, and nothing listens.
+if (require.main === module) {
+  const server = app.listen(PORT, () => {
+    process.stdout.write(`Pamuq is running at http://localhost:${PORT}\n`);
   });
+
+  server.on('error', (error) => {
+    console.error(error.code === 'EADDRINUSE' ? `Port ${PORT} is already in use. Set PORT in .env to another number.` : error);
+    process.exit(1);
+  });
+
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () => {
+      server.close(() => {
+        db.close();
+        process.exit(0);
+      });
+      server.closeIdleConnections();
+      // Browsers keep connections open, so requests in flight get a few seconds and the
+      // rest are cut.
+      setTimeout(() => server.closeAllConnections(), 5000).unref();
+    });
+  }
 }
+
+module.exports = app;
