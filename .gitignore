@@ -141,3 +141,11 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Pamuq SQLite database (orders, stock, subscribers)
+*.db
+*.db-shm
+*.db-wal
+
+# Vercel project link
+.vercel

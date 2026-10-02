@@ -1,0 +1,92 @@
+{{> header}}
+
+    <article class="pdp container" data-product data-slug="{{slug}}" data-name="{{name}}" data-price="{{priceValue}}">
+      <div class="pdp__gallery gallery" data-gallery>
+        <div class="gallery__frame media media--portrait" style="{{toneStyle}}" data-gallery-frame>
+          {{{mainImage}}}
+          <img class="gallery__layer" data-gallery-layer alt="" sizes="{{mainSizes}}" decoding="async">
+        </div>
+        <ul class="thumbs" aria-label="Product images">{{{thumbs}}}
+        </ul>
+      </div>
+
+      <div class="pdp__info">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="/collection">Collection</a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{{name}}</span>
+        </nav>
+
+        <h1 class="pdp__name">{{name}}</h1>
+        <p class="pdp__price">{{price}}</p>
+        <p class="pdp__description">{{productDescription}}</p>
+
+        <fieldset class="colour">
+          <legend class="visually-hidden">Colour</legend>
+          <div class="colour__options">{{{colourOptions}}}
+          </div>
+          <p class="colour__name" data-colour-name>{{selectedColour}}</p>
+        </fieldset>
+
+        <button class="btn btn--solid" type="button" data-add{{{addDisabled}}}>{{addLabel}}</button>
+        <p class="pdp__note">Free delivery over {{freeDeliveryLabel}} · Returns within 30 days</p>
+
+        <div class="accordion" data-accordion>
+          <div class="accordion__item" id="care">
+            <h2 class="accordion__heading">
+              <button class="accordion__trigger" type="button" id="care-trigger" aria-expanded="false" aria-controls="care-panel" data-accordion-trigger>
+                <span>Material &amp; care</span>
+                <span class="accordion__icon" aria-hidden="true"></span>
+              </button>
+            </h2>
+            <div class="accordion__panel" id="care-panel" role="region" aria-labelledby="care-trigger">
+              <div class="accordion__inner">
+                <ul class="bullets">
+                  <li>100% Aegean long-staple cotton</li>
+                  <li>Machine wash cold, tumble dry low</li>
+                  <li>Gets softer with every wash</li>
+                  <li>Natural dyes, colourfast after first wash</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion__item" id="dimensions">
+            <h2 class="accordion__heading">
+              <button class="accordion__trigger" type="button" id="dimensions-trigger" aria-expanded="false" aria-controls="dimensions-panel" data-accordion-trigger>
+                <span>Dimensions</span>
+                <span class="accordion__icon" aria-hidden="true"></span>
+              </button>
+            </h2>
+            <div class="accordion__panel" id="dimensions-panel" role="region" aria-labelledby="dimensions-trigger">
+              <div class="accordion__inner">
+                <dl class="specs">
+                  <div><dt>Size</dt><dd>{{dimensions}}</dd></div>
+                  <div><dt>Weight</dt><dd>{{weight}}</dd></div>
+                </dl>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion__item" id="shipping">
+            <h2 class="accordion__heading">
+              <button class="accordion__trigger" type="button" id="shipping-trigger" aria-expanded="false" aria-controls="shipping-panel" data-accordion-trigger>
+                <span>Shipping</span>
+                <span class="accordion__icon" aria-hidden="true"></span>
+              </button>
+            </h2>
+            <div class="accordion__panel" id="shipping-panel" role="region" aria-labelledby="shipping-trigger">
+              <div class="accordion__inner">
+                <ul class="bullets">
+                  <li>Every towel is woven to order and ships within 5 to 7 days</li>
+                  <li>Free delivery over {{freeDeliveryLabel}}, otherwise {{deliveryFeeLabel}}</li>
+                  <li>Returns accepted within 30 days, unwashed and in the original wrapping</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+{{> footer}}

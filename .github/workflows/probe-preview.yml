@@ -1,0 +1,40 @@
+# Temporary: requests the deployed site from GitHub's servers and prints what comes back.
+name: Probe Vercel preview
+
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request the deployment and the project addresses
+        env:
+          ENVIRONMENT_URL: ${{ github.event.deployment_status.environment_url }}
+          TARGET_URL: ${{ github.event.deployment_status.target_url }}
+          ENVIRONMENT: ${{ github.event.deployment.environment }}
+          SHA: ${{ github.event.deployment.sha }}
+        run: |
+          probe() {
+            base="$1"
+            echo
+            echo "base $base"
+            for path in / /collection /css/main.css; do
+              code=$(curl -sS -m 30 -o body.txt -D headers.txt -w '%{http_code}' "$base$path" || echo "curl failed")
+              echo "  GET $path returned $code"
+              grep -iE '^(location|x-vercel-error|content-type):' headers.txt | sed 's/\r$//;s/^/    /' || true
+              if [ "$path" = "/" ]; then
+                printf '    body: '
+                head -c 300 body.txt | tr '\n' ' '
+                echo
+              fi
+            done
+          }
+          echo "environment: $ENVIRONMENT, commit: $SHA"
+          probe "${ENVIRONMENT_URL:-$TARGET_URL}"
+          probe https://turkishtowel.vercel.app
+          probe https://turkishtowel-demir22.vercel.app
