@@ -117,16 +117,17 @@ This is for looking at the site at a shareable address. It is not a way to run t
 
 Vercel runs the server as short-lived functions with no persistent disk. On Vercel the SQLite file therefore lives in the temporary folder, each function instance gets its own copy, and a copy starts empty and is seeded again whenever an instance starts. Pages, product browsing, the bag and the drawer all work. Orders, stock levels and newsletter sign ups are not kept, and a test payment can be recorded twice if two instances handle it. Do not point live Stripe keys at a preview. A real shop on Vercel needs its data in a hosted database, which is a separate change.
 
-To deploy a preview from your own machine, which uses the branch you have checked out and needs no GitHub connection:
+To deploy from the Vercel dashboard, choose Add New, then Project, import this GitHub repository, leave the framework preset as Other, and deploy. Vercel builds `main` as the production deployment and every other branch as a preview, and builds again on each push.
+
+To deploy from your own machine instead, which needs no GitHub connection:
 
 ```bash
-git checkout claude/pamuq-ecommerce-store-9f0ptu
+git checkout main
+git pull
 npx vercel
 ```
 
-Log in when asked, accept the defaults, and open the preview address it prints.
-
-To deploy from the Vercel dashboard instead, choose Add New, then Project, import this GitHub repository, leave the framework preset as Other, and deploy. Vercel builds every branch as a preview, so open the deployment for `claude/pamuq-ecommerce-store-9f0ptu`. The `main` branch does not contain the store yet, so a build of `main` will not show it until the branch is merged.
+Log in when asked, accept the defaults, and open the address it prints. Add `--prod` to the last command to publish it as the production deployment.
 
 Good to know:
 
