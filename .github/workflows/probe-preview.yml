@@ -1,4 +1,4 @@
-# Temporary: requests the deployed site from GitHub's servers and prints what comes back.
+# Temporary: requests the public production address from GitHub's servers and prints what comes back.
 name: Probe Vercel preview
 
 on:
@@ -12,29 +12,31 @@ jobs:
     if: github.event.deployment_status.state == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Request the deployment and the project addresses
+      - name: Exercise the live site
         env:
-          ENVIRONMENT_URL: ${{ github.event.deployment_status.environment_url }}
-          TARGET_URL: ${{ github.event.deployment_status.target_url }}
+          BASE: https://turkishtowel.vercel.app
           ENVIRONMENT: ${{ github.event.deployment.environment }}
           SHA: ${{ github.event.deployment.sha }}
         run: |
-          probe() {
-            base="$1"
-            echo
-            echo "base $base"
-            for path in / /collection /css/main.css; do
-              code=$(curl -sS -m 30 -o body.txt -D headers.txt -w '%{http_code}' "$base$path" || echo "curl failed")
-              echo "  GET $path returned $code"
-              grep -iE '^(location|x-vercel-error|content-type):' headers.txt | sed 's/\r$//;s/^/    /' || true
-              if [ "$path" = "/" ]; then
-                printf '    body: '
-                head -c 300 body.txt | tr '\n' ' '
-                echo
-              fi
-            done
+          echo "triggered by $ENVIRONMENT deployment of $SHA"
+          get() {
+            code=$(curl -sS -m 30 -o body.txt -D headers.txt -w '%{http_code}' "$BASE$1" || echo "curl failed")
+            echo "GET $1 returned $code $(grep -i '^content-type:' headers.txt | tr -d '\r')"
           }
-          echo "environment: $ENVIRONMENT, commit: $SHA"
-          probe "${ENVIRONMENT_URL:-$TARGET_URL}"
-          probe https://turkishtowel.vercel.app
-          probe https://turkishtowel-demir22.vercel.app
+          for path in / /collection /product/hammam-classic /product/sultan-stripe /product/aegean-waffle /product/fine-hammam-set /cart /product/does-not-exist /order-confirmed /css/main.css /js/cart.js /js/product.js /js/site.js; do
+            get "$path"
+          done
+          echo
+          echo "collection cards: $(curl -sS -m 30 "$BASE/collection" | grep -c 'class="card"')"
+          echo "canonical: $(curl -sS -m 30 "$BASE/" | grep -o 'canonical" href="[^"]*"')"
+          echo "product colours on hammam-classic: $(curl -sS -m 30 "$BASE/product/hammam-classic" | grep -c 'name="colour"')"
+          post() {
+            echo "POST $1 $2"
+            curl -sS -m 30 -X POST "$BASE$1" -H 'content-type: application/json' -H 'accept: application/json' -d "$2" -w '\n  status %{http_code}\n'
+          }
+          post /newsletter '{"email":"probe@example.com"}'
+          post /newsletter '{"email":"not an email"}'
+          post /checkout '{"items":[]}'
+          post /checkout '{"items":[{"id":"no-such-towel","quantity":1}]}'
+          post /checkout '{bad json'
+          post /webhook '{}'
