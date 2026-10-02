@@ -1,0 +1,55 @@
+# Temporary: requests the deployed site from GitHub's servers and prints what comes back.
+name: Probe Vercel preview
+
+on:
+  push:
+    branches: [claude/pamuq-ecommerce-store-9f0ptu]
+  deployment_status:
+
+permissions:
+  contents: read
+
+jobs:
+  probe-alias:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Vercel, then request the branch address
+        env:
+          BASE: https://turkishtowel-git-claude-pamuq-ecommerce-store-9f0ptu-demir22.vercel.app
+        run: |
+          sleep 90
+          echo "base: $BASE"
+          for path in / /collection /product/hammam-classic /css/main.css /api; do
+            code=$(curl -sS -m 30 -o body.txt -D headers.txt -w '%{http_code}' "$BASE$path" || echo "curl failed")
+            echo
+            echo "GET $path returned $code"
+            grep -iE '^(server|content-type|location|x-vercel-[a-z-]+|www-authenticate):' headers.txt | sed 's/\r$//' || true
+            head -c 600 body.txt | tr '\n' ' '
+            echo
+          done
+
+  probe-deployment:
+    if: github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request the deployment Vercel just finished
+        env:
+          ENVIRONMENT_URL: ${{ github.event.deployment_status.environment_url }}
+          TARGET_URL: ${{ github.event.deployment_status.target_url }}
+          ENVIRONMENT: ${{ github.event.deployment.environment }}
+          SHA: ${{ github.event.deployment.sha }}
+        run: |
+          BASE="${ENVIRONMENT_URL:-$TARGET_URL}"
+          echo "environment: $ENVIRONMENT"
+          echo "commit: $SHA"
+          echo "environment_url: $ENVIRONMENT_URL"
+          echo "target_url: $TARGET_URL"
+          for path in / /collection /product/hammam-classic /css/main.css /api; do
+            code=$(curl -sS -m 30 -o body.txt -D headers.txt -w '%{http_code}' "$BASE$path" || echo "curl failed")
+            echo
+            echo "GET $path returned $code"
+            grep -iE '^(server|content-type|location|x-vercel-[a-z-]+|www-authenticate):' headers.txt | sed 's/\r$//' || true
+            head -c 600 body.txt | tr '\n' ' '
+            echo
+          done
