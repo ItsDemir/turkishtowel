@@ -130,7 +130,7 @@ To deploy from the Vercel dashboard instead, choose Add New, then Project, impor
 
 Good to know:
 
-* No settings are required. `SITE_URL` falls back to the address Vercel gives the deployment.
+* No settings are required. Without `SITE_URL`, the site uses the project's own address on a production deployment and the deployment's address on a preview. Set `SITE_URL` for a custom domain.
 * To try checkout on a preview, add a test `STRIPE_SECRET_KEY` and a `RESEND_API_KEY` under Environment Variables in the project settings. `STRIPE_WEBHOOK_SECRET` is not needed, because the confirmation page records the order and sends the email by itself.
 * Vercel can put a login in front of preview addresses (Deployment Protection). To share the link with someone outside your team, turn that off for previews or create a shareable link in the project settings.
 * How it is wired: `api/index.js` hands the Express app to Vercel as one function, and `vercel.json` sends every request that is not a file in `public/` to it. The entry point also removes the request and response helpers that Vercel adds, so Express reads request bodies and sends responses the way it does everywhere else.

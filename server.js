@@ -12,8 +12,14 @@ const { sendOrderConfirmation } = require('./email');
 const { escapeHtml, formatPrice, firstName } = require('./format');
 
 const PORT = Number(process.env.PORT) || 3000;
-// On Vercel, VERCEL_URL is the address of the deployment being served.
-const DEFAULT_SITE_URL = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${PORT}`;
+// On Vercel a production deployment is reached at the project's own address, which is the
+// one customers return to from Stripe. Other deployments use their own address. Set
+// SITE_URL to override either, for example for a custom domain.
+const VERCEL_HOST =
+  process.env.VERCEL_ENV === 'production' && process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? process.env.VERCEL_PROJECT_PRODUCTION_URL
+    : process.env.VERCEL_URL;
+const DEFAULT_SITE_URL = VERCEL_HOST ? `https://${VERCEL_HOST}` : `http://localhost:${PORT}`;
 const SITE_URL = (process.env.SITE_URL || DEFAULT_SITE_URL).replace(/\/+$/, '');
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
