@@ -168,7 +168,7 @@
 
   function lineItem(item) {
     var label = labelFor(item);
-    var href = item.slug ? '/product/' + encodeURIComponent(item.slug) : '/collection';
+    var href = item.slug ? '/product/' + encodeURIComponent(item.slug) : '/shop';
 
     var picture = element('div', { class: 'line__image media' }, [
       item.image

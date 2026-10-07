@@ -1,0 +1,25 @@
+{{> header}}
+
+    <section class="sets-hero" aria-labelledby="sets-hero-title">
+      {{{setsImage}}}
+      <div class="sets-hero__content container">
+        <p class="eyebrow">Curated sets</p>
+        <h1 class="sets-hero__title" id="sets-hero-title">Composed to be together</h1>
+        <p class="sets-hero__lead">Five collections, each put together in our studio in a single colourway and sold only as a complete set.</p>
+      </div>
+    </section>
+
+    <div class="container sets-page">
+      {{{categoryNav}}}
+
+      <ul class="set-notes reveal" aria-label="About our sets">
+        <li><span class="set-notes__title">Sold only as a set</span>Every piece is chosen to sit beside the others. Sets are not split.</li>
+        <li><span class="set-notes__title">One colourway</span>Choose the colour once and the whole set arrives matched.</li>
+        <li><span class="set-notes__title">Presented to give</span>Wrapped in a reusable cotton gift bag, with a card on request.</li>
+      </ul>
+
+      <div class="set-list">{{{sets}}}
+      </div>
+    </div>
+
+{{> footer}}

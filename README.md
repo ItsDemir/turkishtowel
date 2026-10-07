@@ -1,19 +1,34 @@
 # Pamuq
 
-A direct to consumer store for hand-loomed Turkish peshtemal towels, woven in the Aegean. It is a small stack that you own end to end: plain HTML, CSS and JavaScript in the browser, a thin Node and Express server, Stripe for payment, Resend for order emails and a single SQLite file for orders and stock. There is no Shopify, no WooCommerce and no platform fee.
+A direct to consumer store for luxury Turkish towels, woven from long-staple Aegean cotton in Denizli. It is a small stack that you own end to end: plain HTML, CSS and JavaScript in the browser, a thin Node and Express server, Stripe for payment, Resend for order emails and a single SQLite file for orders and stock. There is no Shopify, no WooCommerce and no platform fee.
 
 ## What is in it
 
-Six pages, all served by Express with a shared header and footer:
+Every page is served by Express with a shared header and footer:
 
-* `/` the homepage
-* `/collection` every product, with a colour filter
-* `/product/:slug` a product page with gallery, colours and an accordion
+* `/` the homepage: the Aegean hero, the six categories, the most loved pieces, "Why a good towel matters", the curated sets and the Aegean cotton story
+* `/shop` every towel, grouped by category
+* `/shop/:category` one category: `bath-towels`, `hand-towels`, `washcloths`, `guest-towels` or `bath-sheets`
+* `/sets` the curated towel sets, which are sold only as a whole
+* `/product/:slug` a product page with gallery, specifications, colours, what is inside a set, and related pieces
 * `/cart` the bag
 * `/checkout` not a page: the bag is posted here and the server sends the customer to Stripe
 * `/order-confirmed` the thank you page, which checks the payment with Stripe
 
-The bag also has a drawer that slides in from the right when something is added.
+The old `/collection` address redirects to `/shop`. The bag also has a drawer that slides in from the right when something is added.
+
+## The range
+
+The catalogue lives in `catalogue.js`. It was shaped by a look at how the most successful Turkish cotton towel brands (Parachute, Brooklinen, Quince, Boll & Branch and Coyuchi, with Rise & Fall and Hamam as UK price references) organise and price their ranges:
+
+* **Four weaves**, named after places on the Aegean coast: Ege Plush (700 gsm loop terry, the signature), Assos Rib (550 gsm ribbed terry), Datça Waffle (380 gsm honeycomb) and Bodrum Peshtemal (240 gsm flat weave with a knotted fringe).
+* **Six categories** in standard UK sizes: washcloths 30 × 30 cm, guest towels 40 × 60 cm, hand towels 50 × 90 cm, bath towels 70 × 140 cm, bath sheets 100 × 180 cm, and towel sets.
+* **Eight colourways** taken from the region: Salt, Raw Cotton, Sandstone, Pamukkale, Olive Grove, Aegean, Terracotta and Basalt, plus two woven stripes for the peshtemal.
+* **Five curated sets**: The Essential Trio, The Couple's Set, The Guest Bathroom Set, The Full Bathroom Set and The Hammam Spa Set. Each is one product with its own price, about 10% below its pieces bought separately, and lists what is inside. A set is added to the bag as a single item and is never split.
+
+Prices sit at the top of the UK market for Turkish cotton: £9 to £10 for a washcloth, £42 to £46 for a bath towel and £72 to £78 for a bath sheet.
+
+The copy only makes claims that are true of good long-staple cotton in general. Before going live, check them against your mill's specification: "long-staple", "Aegean" and "woven in Denizli" should match your supply chain, and words such as "organic" need GOTS certification, which is why the site does not use them.
 
 ## Prerequisites
 
@@ -53,7 +68,7 @@ node server.js
 
 Then open http://localhost:3000. The same commands are available as `npm run seed`, `npm start` and `npm run dev` (which restarts on file changes).
 
-`seed.js` loads the four products. It is safe to run again: it updates products, colours and pictures and never touches stock levels or orders. If you forget it, the server seeds an empty database by itself when it starts.
+`seed.js` loads the 18 products from `catalogue.js`. It is safe to run again: it updates products, colours and pictures, removes products that are no longer in the catalogue, and never touches stock levels or orders. You rarely need it: the server seeds an empty database by itself, and also re-seeds whenever `CATALOGUE_VERSION` at the top of `catalogue.js` is higher than the one the database was seeded with. Bump that number after editing the catalogue.
 
 The site works without any keys, so you can browse and style it first. Checkout needs `STRIPE_SECRET_KEY`, the webhook needs `STRIPE_WEBHOOK_SECRET` and emails need `RESEND_API_KEY`.
 
@@ -88,19 +103,21 @@ Two details worth knowing:
 * **Stripe.js** is loaded from `https://js.stripe.com/v3/` on the bag page only, so that Stripe can spot fraud on the way to Checkout. The payment itself is a redirect, so no publishable key is needed.
 * **The bag icon** is the Tabler Icons `shopping-bag` drawing, inlined as SVG so that the site needs no icon font.
 
-## Adding your own product images
+## Product photography
 
-The pictures are Unsplash placeholders. I chose their photo IDs without being able to preview them, so check each one, and swap any that do not suit. If a photo cannot load, its frame shows the colour of the towel instead, so a bad ID looks tidy rather than broken.
+The pictures are free stock photographs from Pexels (towels, bathrooms and cotton) and Unsplash (the hero and the weaver's hands), loaded from their image services at the size each screen needs. I chose them from their descriptions, because this sandbox cannot load either site, so look at every one on the live site and swap any that do not suit. If a photo cannot load, its frame shows the colour of the towel instead, so a bad ID looks tidy rather than broken.
+
+Every colourway of a product shares the product's photographs, and the swatch beside them shows the colour. Real photography of your own towels, shot in each colour, is the single biggest improvement you can make. The look to aim for: towels folded on stone or pale wood, hanging from a slim rail, rolled beside a bath, and close crops of the loops and the hem, in soft daylight with warm neutral props.
 
 To use your own photographs:
 
-1. Export each picture as a JPEG in portrait 4:5, about 1400 pixels wide, and copy it into `public/images/`. A good naming scheme is the product and colour, such as `hammam-classic-stone.jpg`.
-2. In `seed.js`, replace the Unsplash photo ID in each `colour(...)` call with the path of your file, for example `'/images/hammam-classic-stone.jpg'`. Do the same for the gallery scenes near the top of the file, which are written as `picture('...')`.
-3. Do the same for the homepage hero and the brand story picture in `SITE_IMAGES` at the top of `server.js`.
-4. Update the alt text beside each picture so it describes the new photograph.
-5. Run `node seed.js` and refresh. Stock and orders are untouched.
+1. Export each picture as a JPEG in portrait 4:5, about 1600 pixels wide, and copy it into `public/images/`, for example `ege-bath-towel.jpg`.
+2. In `catalogue.js`, replace the Pexels ID in the `PHOTOS` list with the path, for example `picture('/images/ege-bath-towel.jpg', 'Ege Bath Towel folded on a travertine stool')`. A product's first picture is `image` and the next three are `gallery`.
+3. To give a single colour its own photograph, add `image: picture('/images/ege-bath-towel-aegean.jpg', '...')` to that colour.
+4. The hero and the editorial pictures are in `SITE_IMAGES` in the same file.
+5. Bump `CATALOGUE_VERSION` and restart the server. Stock and orders are untouched.
 
-Unsplash resizes pictures on request, but local files are served as they are, so export them at sensible sizes.
+Pexels and Unsplash resize pictures on request, but local files are served as they are, so export them at sensible sizes.
 
 ## Going live
 
@@ -140,7 +157,8 @@ Good to know:
 
 ```
 server.js              Express server, routes and Stripe logic
-seed.js                loads the products into SQLite
+catalogue.js           categories, weaves, colourways, products, sets and photography
+seed.js                loads the catalogue into SQLite
 db.js                  SQLite setup and queries
 email.js               the order confirmation email and the Resend call
 format.js              price formatting and HTML escaping shared by the two above
@@ -152,20 +170,22 @@ public/
   css/main.css         every style on the site
   js/cart.js           the bag, the header count and the drawer
   js/product.js        colour swatches, gallery, add to bag, accordion
-  js/site.js           header, colour filter, newsletter, failed pictures
+  js/site.js           header, scroll reveal, newsletter, failed pictures
   images/              put your own photographs here
 views/
   partials/header.html the document head and the site header
   partials/footer.html the footer, the drawer and the scripts
-  index.html  collection.html  product.html  cart.html  order-confirmed.html
+  index.html  shop.html  sets.html  product.html  cart.html  order-confirmed.html
   error.html           used for pages that are not found
 ```
 
-A few small additions to the layout in the brief: `format.js`, because the server and the email both need the same price formatting and escaping, `js/site.js`, for behaviour that every page shares, and `api/index.js` with `vercel.json` for the Vercel preview.
+A few small additions to the layout in the brief: `catalogue.js`, so the range can be edited in one place, `format.js`, because the server and the email both need the same price formatting and escaping, `js/site.js`, for behaviour that every page shares, and `api/index.js` with `vercel.json` for the Vercel preview.
 
 ## Design notes
 
-* The palette, type scale and motion rules from the brief are CSS variables and rules at the top of `main.css`. Only the hero fades in on load, only the bag drawer slides, and every transition and animation is switched off for visitors who ask for reduced motion.
+* The homepage hero is the original design: the same photograph, overlay, type and fade. Everything after it is a warm, light editorial layout in undyed cotton, stone and Aegean tones, with one dark section for the Aegean cotton story and the footer.
+* Type is Cormorant Garamond for headings and Inter for text. The colours are CSS variables at the top of `main.css`.
+* Motion is quiet: sections rise gently into view as they are reached, product pictures zoom slightly on hover, and the bag drawer slides. All of it is switched off for visitors who ask for reduced motion, and nothing is hidden when JavaScript is off.
 * Every interactive element works from the keyboard. The drawer makes the page behind it inert while it is open, closes on Escape and returns focus to where it came from.
-* The olive used for secondary text, `#7a7560`, has a contrast of 4.17 to 1 on the page background. That is just under the 4.5 to 1 that WCAG AA asks for at small sizes. Changing `--olive` to `#807b65` clears it with almost no visible difference.
-* The breakpoint is 768px. There is no tablet layout.
+* Small text on the light background uses `--muted` (`#6c6558`) and `--clay` (`#93512f`), which both pass WCAG AA contrast at small sizes.
+* The main breakpoint is 768px, with a few layouts that also adjust at 900px and 1100px.
