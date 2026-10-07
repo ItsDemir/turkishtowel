@@ -1,0 +1,58 @@
+name: image-scout
+on:
+  push:
+    branches: [claude/pamuq-ecommerce-store-9f0ptu]
+    paths: [.image-scout/request.json]
+permissions:
+  contents: write
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y imagemagick jq >/dev/null 2>&1 || true
+      - name: Search and fetch
+        run: |
+          set -u
+          mkdir -p .image-scout/out
+          mode=$(jq -r .mode .image-scout/request.json)
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36'
+          if [ "$mode" = "search" ]; then
+            jq -r '.queries[]' .image-scout/request.json | while read -r query; do
+              slug=$(echo "$query" | tr ' ' '-')
+              dir=".image-scout/tmp/$slug"; mkdir -p "$dir"
+              q=$(printf %s "$query" | jq -sRr @uri)
+              for page in 1 2; do
+                curl -sfL -A "$UA" "https://unsplash.com/napi/search/photos?query=$q&per_page=30&page=$page&plus=none" > "$dir/p$page.json" || echo "search failed $query"
+              done
+              jq -s '[.[].results[]? | select(.premium != true and .plus != true) | {id, slug, w: .width, h: .height, desc: (.alt_description // .description), raw: .urls.raw}]' "$dir"/p*.json > ".image-scout/out/$slug.json"
+              n=0
+              jq -c '.[]' ".image-scout/out/$slug.json" | while read -r row; do
+                id=$(echo "$row" | jq -r .id); raw=$(echo "$row" | jq -r .raw)
+                curl -sfL "${raw}&w=260&h=320&fit=crop&q=60&fm=jpg" -o "$dir/$id.jpg" || true
+              done
+              files=$(ls "$dir"/*.jpg 2>/dev/null | head -60)
+              [ -n "$files" ] && montage $(for f in $files; do echo "-label $(basename "$f" .jpg) $f"; done) -tile 6x -geometry 260x320+4+4 -pointsize 15 ".image-scout/out/$slug.jpg"
+            done
+          else
+            mkdir -p public/images
+            jq -c '.picks[]' .image-scout/request.json | while read -r row; do
+              id=$(echo "$row" | jq -r .id); name=$(echo "$row" | jq -r .name)
+              ar=$(echo "$row" | jq -r '.crop // ""')
+              json=$(curl -sfL -A "$UA" "https://unsplash.com/napi/photos/$id")
+              raw=$(echo "$json" | jq -r .urls.raw)
+              echo "$json" | jq '{id, user: .user.name, username: .user.username, link: .links.html, desc: .alt_description}' >> .image-scout/out/credits.jsonl
+              if [ -n "$ar" ]; then extra="&w=$(echo $ar | cut -dx -f1)&h=$(echo $ar | cut -dx -f2)&fit=crop&crop=entropy"; else extra="&w=1800"; fi
+              curl -sfL "${raw}${extra}&q=78&fm=jpg" -o "public/images/$name.jpg" || echo "failed $id"
+              convert "public/images/$name.jpg" -strip -interlace Plane -quality 78 "public/images/$name.jpg" || true
+            done
+            ls -la public/images
+          fi
+          rm -rf .image-scout/tmp
+      - name: Commit
+        run: |
+          git config user.name "image-scout"
+          git config user.email "image-scout@users.noreply.github.com"
+          git add -A .image-scout/out public/images
+          git commit -m "image-scout results" || exit 0
+          git pull --rebase origin "$GITHUB_REF_NAME" && git push origin HEAD:"$GITHUB_REF_NAME"
