@@ -36,6 +36,11 @@ db.exec(`
     position    INTEGER NOT NULL DEFAULT 0
   );
 
+  CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+
   -- One row per purchasable colour. The sku doubles as the cart item id.
   CREATE TABLE IF NOT EXISTS variants (
     sku        TEXT    PRIMARY KEY,
@@ -84,6 +89,27 @@ db.exec(`
   );
 `);
 
+// Columns added after the first release. A database made by an earlier version gains
+// them here, and the next seed fills them in.
+const PRODUCT_COLUMNS = {
+  category: "TEXT NOT NULL DEFAULT ''",
+  kind: "TEXT NOT NULL DEFAULT 'item'",
+  summary: "TEXT NOT NULL DEFAULT ''",
+  material: "TEXT NOT NULL DEFAULT ''",
+  weave: "TEXT NOT NULL DEFAULT ''",
+  collection: "TEXT NOT NULL DEFAULT ''",
+  feel: "TEXT NOT NULL DEFAULT ''",
+  featured: 'INTEGER NOT NULL DEFAULT 0',
+  contents: "TEXT NOT NULL DEFAULT '[]'",
+  image: "TEXT NOT NULL DEFAULT ''",
+  image_alt: "TEXT NOT NULL DEFAULT ''",
+};
+
+const existingColumns = new Set(db.prepare('PRAGMA table_info(products)').all().map((column) => column.name));
+for (const [name, definition] of Object.entries(PRODUCT_COLUMNS)) {
+  if (!existingColumns.has(name)) db.exec(`ALTER TABLE products ADD COLUMN ${name} ${definition}`);
+}
+
 const q = {
   countProducts: db.prepare('SELECT COUNT(*) AS n FROM products'),
   allProducts: db.prepare('SELECT * FROM products ORDER BY position, id'),
@@ -93,14 +119,19 @@ const q = {
   allGallery: db.prepare('SELECT * FROM gallery_images ORDER BY product_id, position'),
   galleryForProduct: db.prepare('SELECT * FROM gallery_images WHERE product_id = ? ORDER BY position'),
   variantBySku: db.prepare(`
-    SELECT v.sku, v.colour, v.image, v.image_alt, v.stock, p.slug, p.name, p.price
+    SELECT v.sku, v.colour, v.image, v.image_alt, v.stock, p.slug, p.name, p.price, p.kind
     FROM variants v JOIN products p ON p.id = v.product_id
     WHERE v.sku = ?
   `),
 
   upsertProduct: db.prepare(`
-    INSERT INTO products (slug, name, price, description, dimensions, weight, new_arrival, position)
-    VALUES (@slug, @name, @price, @description, @dimensions, @weight, @newArrival, @position)
+    INSERT INTO products (
+      slug, name, price, description, dimensions, weight, new_arrival, position, category, kind,
+      summary, material, weave, collection, feel, featured, contents, image, image_alt
+    ) VALUES (
+      @slug, @name, @price, @description, @dimensions, @weight, @newArrival, @position, @category, @kind,
+      @summary, @material, @weave, @collection, @feel, @featured, @contents, @image, @imageAlt
+    )
     ON CONFLICT (slug) DO UPDATE SET
       name = excluded.name,
       price = excluded.price,
@@ -108,7 +139,18 @@ const q = {
       dimensions = excluded.dimensions,
       weight = excluded.weight,
       new_arrival = excluded.new_arrival,
-      position = excluded.position
+      position = excluded.position,
+      category = excluded.category,
+      kind = excluded.kind,
+      summary = excluded.summary,
+      material = excluded.material,
+      weave = excluded.weave,
+      collection = excluded.collection,
+      feel = excluded.feel,
+      featured = excluded.featured,
+      contents = excluded.contents,
+      image = excluded.image,
+      image_alt = excluded.image_alt
   `),
   // Stock is deliberately left out of the update so that re-seeding never resets inventory.
   upsertVariant: db.prepare(`
@@ -147,6 +189,9 @@ const q = {
   markEmailed: db.prepare("UPDATE orders SET emailed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?"),
 
   addSubscriber: db.prepare('INSERT OR IGNORE INTO subscribers (email) VALUES (?)'),
+
+  getMeta: db.prepare('SELECT value FROM meta WHERE key = ?'),
+  setMeta: db.prepare('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value'),
 };
 
 function slugify(text) {
@@ -188,6 +233,18 @@ function toProduct(row, variants, gallery) {
     dimensions: row.dimensions,
     weight: row.weight,
     newArrival: row.new_arrival === 1,
+    category: row.category,
+    kind: row.kind,
+    isSet: row.kind === 'set',
+    summary: row.summary,
+    size: row.dimensions,
+    material: row.material,
+    weave: row.weave,
+    collection: row.collection,
+    feel: row.feel,
+    featured: row.featured === 1,
+    contents: JSON.parse(row.contents || '[]'),
+    image: { url: row.image, alt: row.image_alt },
     variants: variants.map(toVariant),
     gallery: gallery.map((image) => ({ url: image.url, alt: image.alt })),
   };
@@ -225,10 +282,14 @@ function listProducts() {
     .map((row) => toProduct(row, variants.get(row.id) || [], gallery.get(row.id) || []));
 }
 
-function listNewArrivals(limit = 3) {
+function listFeatured({ sets = false, limit = 4 } = {}) {
   return listProducts()
-    .filter((product) => product.newArrival)
+    .filter((product) => product.featured && product.isSet === sets)
     .slice(0, limit);
+}
+
+function listCategory(category) {
+  return listProducts().filter((product) => product.category === category);
 }
 
 function getProduct(slug) {
@@ -250,6 +311,7 @@ function getVariant(sku) {
     productSlug: row.slug,
     productName: row.name,
     price: row.price,
+    isSet: row.kind === 'set',
   };
 }
 
@@ -265,10 +327,21 @@ const upsertCatalogue = db.transaction((products) => {
       name: product.name,
       price: product.price,
       description: product.description,
-      dimensions: product.dimensions,
+      dimensions: product.size,
       weight: product.weight,
       newArrival: product.newArrival ? 1 : 0,
       position,
+      category: product.category,
+      kind: product.kind,
+      summary: product.summary,
+      material: product.material,
+      weave: product.weave,
+      collection: product.collection,
+      feel: product.feel,
+      featured: product.featured ? 1 : 0,
+      contents: JSON.stringify(product.contents || []),
+      image: product.image.url,
+      imageAlt: product.image.alt,
     });
     const { id: productId } = q.productBySlug.get(product.slug);
 
@@ -350,6 +423,15 @@ function addSubscriber(email) {
   return q.addSubscriber.run(email).changes === 1;
 }
 
+function catalogueVersion() {
+  const row = q.getMeta.get('catalogue_version');
+  return row ? Number(row.value) : 0;
+}
+
+function setCatalogueVersion(version) {
+  q.setMeta.run('catalogue_version', String(version));
+}
+
 function close() {
   db.close();
 }
@@ -358,7 +440,8 @@ module.exports = {
   DB_PATH,
   countProducts,
   listProducts,
-  listNewArrivals,
+  listFeatured,
+  listCategory,
   getProduct,
   getVariant,
   upsertCatalogue,
@@ -366,5 +449,7 @@ module.exports = {
   getOrder,
   markOrderEmailed,
   addSubscriber,
+  catalogueVersion,
+  setCatalogueVersion,
   close,
 };

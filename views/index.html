@@ -5,53 +5,179 @@
       <div class="hero__content container">
         <p class="eyebrow">Woven in the Aegean</p>
         <h1 class="hero__title" id="hero-title">The towel you'll use for twenty years.</h1>
-        <p class="hero__lead">Hand-loomed peshtemal from Denizli, Turkey. Each one woven by the same family for three generations.</p>
-        <a class="btn btn--ghost" href="/collection">Shop the collection</a>
+        <p class="hero__lead">Bath towels, bath sheets and curated sets, woven from long-staple Aegean cotton in Denizli, Turkey.</p>
+        <a class="btn btn--ghost" href="/shop">Shop the collection</a>
       </div>
     </section>
 
-    <section class="section arrivals" aria-labelledby="arrivals-title">
+    <section class="intro" aria-labelledby="intro-title">
+      <div class="container intro__inner reveal">
+        <p class="eyebrow eyebrow--dark" id="intro-title">Pamuk is Turkish for cotton</p>
+        <p class="intro__statement">A towel is the first thing that touches you in the morning and the last thing at night. We think it should be <em>extraordinary</em>.</p>
+      </div>
+    </section>
+
+    <section class="section categories" aria-labelledby="categories-title">
       <div class="container">
-        <h2 class="section-note" id="arrivals-title">New arrivals</h2>
-        <ul class="strip">{{{newArrivals}}}
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow eyebrow--dark">Shop by category</p>
+            <h2 class="section-title" id="categories-title">The collection</h2>
+          </div>
+          <a class="text-link text-link--arrow" href="/shop">Shop all towels <span aria-hidden="true">→</span></a>
+        </header>
+        <ul class="tiles">{{{categoryTiles}}}
         </ul>
       </div>
     </section>
 
-    <section class="section story" id="about" aria-label="About Pamuq">
-      <div class="container story__grid">
-        <div class="story__media media" style="--tone-a:#3b3426;--tone-b:#3b3426">
-          {{{storyImage}}}
+    <section class="section section--tight bestsellers" aria-labelledby="bestsellers-title">
+      <div class="container">
+        <header class="section-head reveal">
+          <div>
+            <p class="eyebrow eyebrow--dark">Most loved</p>
+            <h2 class="section-title" id="bestsellers-title">The pieces people come back for</h2>
+          </div>
+          <a class="text-link text-link--arrow" href="/shop">View the collection <span aria-hidden="true">→</span></a>
+        </header>
+        <ul class="grid grid--four">{{{bestsellers}}}
+        </ul>
+      </div>
+    </section>
+
+    <section class="section why" id="why" aria-labelledby="why-title">
+      <div class="container why__grid">
+        <div class="why__media reveal">
+          <div class="why__image media">{{{whyImage}}}</div>
+          <div class="why__detail media">{{{whyDetail}}}</div>
         </div>
-        <div class="story__text">
-          <blockquote class="pull-quote">
-            <p>We don't weave faster. We weave better.</p>
-          </blockquote>
-          <p class="story__body">Every peshtemal is woven on a shuttle loom in Denizli, one at a time and at the pace the cotton asks for. The family checks each length by hand, and it leaves the workshop only when they would use it themselves.</p>
-          <a class="text-link text-link--accent" href="#craft">About our craft <span aria-hidden="true">→</span></a>
+
+        <div class="why__text">
+          <header class="reveal">
+            <p class="eyebrow eyebrow--dark">Why a good towel matters</p>
+            <h2 class="section-title section-title--large" id="why-title">You use it every day. It should feel like it.</h2>
+            <p class="why__lead">Few things you own touch your skin as often as a towel, and almost nobody thinks about it. That is a shame, because the difference between an ordinary towel and a truly good one is something you feel every single morning.</p>
+          </header>
+
+          <ol class="points">
+            <li class="point reveal">
+              <span class="point__number" aria-hidden="true">01</span>
+              <h3 class="point__title">It is the first thing your skin feels</h3>
+              <p class="point__text">After a bath your skin is warm, damp and at its most sensitive. Long, smooth cotton fibres glide over it. Short, coarse ones catch and scratch, and you notice it even if you never put it into words.</p>
+            </li>
+            <li class="point reveal">
+              <span class="point__number" aria-hidden="true">02</span>
+              <h3 class="point__title">It should actually dry you</h3>
+              <p class="point__text">Absorbency is the whole point. Dense loops of good cotton draw water away in one gentle pass, instead of pushing it around your skin while you rub harder.</p>
+            </li>
+            <li class="point reveal">
+              <span class="point__number" aria-hidden="true">03</span>
+              <h3 class="point__title">Softness that breathes</h3>
+              <p class="point__text">A great towel feels soft without feeling heavy or clammy. Natural cotton lets air move through it, so it dries between uses and smells fresh rather than damp.</p>
+            </li>
+            <li class="point reveal">
+              <span class="point__number" aria-hidden="true">04</span>
+              <h3 class="point__title">Why cheap towels let you down</h3>
+              <p class="point__text">Short fibres and thin construction shed lint, stiffen after a few washes and lose their loops. Many are coated with softeners that feel plush in the shop and wash out within weeks.</p>
+            </li>
+            <li class="point reveal">
+              <span class="point__number" aria-hidden="true">05</span>
+              <h3 class="point__title">Better cotton lasts longer</h3>
+              <p class="point__text">Long-staple fibres spin into stronger, smoother yarn. The towel keeps its loft, its colour and its softness for years rather than months, so it is the better buy as well as the better feeling.</p>
+            </li>
+            <li class="point reveal">
+              <span class="point__number" aria-hidden="true">06</span>
+              <h3 class="point__title">A small luxury, every day</h3>
+              <p class="point__text">You will reach for it hundreds of times a year. Very little else you own is used so often, or can change how a morning feels so easily.</p>
+            </li>
+          </ol>
         </div>
       </div>
     </section>
 
-    <section class="materials" id="craft" aria-labelledby="craft-title">
-      <h2 class="visually-hidden" id="craft-title">What goes into every towel</h2>
+    <section class="section sets-teaser" aria-labelledby="sets-title">
+      <div class="container">
+        <header class="section-head section-head--center reveal">
+          <p class="eyebrow eyebrow--dark">Curated sets</p>
+          <h2 class="section-title section-title--large" id="sets-title">Composed to be together</h2>
+          <p class="section-lead">Our sets are put together in the studio in a single colourway, presented in a cotton gift bag and sold only as a complete set. The easiest way to dress a whole bathroom, or to give someone the towels they would never buy for themselves.</p>
+        </header>
+        <ul class="grid grid--three">{{{featuredSets}}}
+        </ul>
+        <p class="sets-teaser__more reveal"><a class="btn btn--outline" href="/sets">Explore all five sets</a></p>
+      </div>
+    </section>
+
+    <section class="cotton" id="aegean-cotton" aria-labelledby="cotton-title">
+      <div class="container">
+        <div class="cotton__intro">
+          <div class="cotton__text reveal">
+            <p class="eyebrow">The Aegean cotton story</p>
+            <h2 class="cotton__title" id="cotton-title">It begins in the fields above the Aegean.</h2>
+            <p class="cotton__lead">Between the mountains and the sea of western Turkey, long sunlit summers and fertile river valleys have grown cotton for centuries. The fibre that comes from them is long, fine and strong, and it is the reason a Turkish towel feels the way it does.</p>
+            <p class="cotton__coords" aria-hidden="true">37.78° N · 29.09° E · Denizli</p>
+          </div>
+          <div class="cotton__media reveal">
+            <div class="cotton__image media">{{{cottonImage}}}</div>
+            <div class="cotton__detail media">{{{cottonDetail}}}</div>
+          </div>
+        </div>
+
+        <ul class="qualities">
+          <li class="quality reveal">
+            <h3 class="quality__title">Softness</h3>
+            <p class="quality__text">Long fibres leave fewer loose ends in every thread, so the surface stays smooth. It feels silky against the skin from the very first use.</p>
+          </li>
+          <li class="quality reveal">
+            <h3 class="quality__title">Long fibres</h3>
+            <p class="quality__text">Long-staple cotton spins into fine, even yarn that holds together. That means less lint, less pilling and loops that keep their shape.</p>
+          </li>
+          <li class="quality reveal">
+            <h3 class="quality__title">Absorbency</h3>
+            <p class="quality__text">Cotton drinks water naturally. Woven into dense loops, it draws moisture from the skin quickly and holds it, so one towel is all you need.</p>
+          </li>
+          <li class="quality reveal">
+            <h3 class="quality__title">Breathability</h3>
+            <p class="quality__text">Air moves freely through natural cotton. Your towel dries between uses and stays fresh, instead of hanging damp on the rail.</p>
+          </li>
+          <li class="quality reveal">
+            <h3 class="quality__title">Durability</h3>
+            <p class="quality__text">Strong yarn and a tight weave stand up to hundreds of washes, keeping their softness and their colour year after year.</p>
+          </li>
+        </ul>
+
+        <div class="craft">
+          <div class="craft__media media reveal">{{{handsImage}}}</div>
+          <div class="craft__text reveal">
+            <h3 class="craft__title">Woven in Denizli</h3>
+            <p>A few hours inland from the Aegean coast, Denizli makes most of Turkey's towels and has woven cloth for generations. Ours are woven there by a family workshop, finished by hand and checked one by one before they leave.</p>
+            <p>We never rush the loom, never coat the cotton in softeners and never cut corners on the hem. What reaches you is simply very good cotton, woven well.</p>
+          </div>
+        </div>
+
+        <p class="cotton__closing reveal">Most people never realise a towel can make this much difference. <em>Until the first morning they use one.</em></p>
+      </div>
+    </section>
+
+    <section class="promise" aria-labelledby="promise-title">
+      <h2 class="visually-hidden" id="promise-title">Our promise</h2>
       <div class="container">
         <ul class="facts">
           <li class="fact">
-            <span class="fact__label">100% Aegean cotton</span>
-            <span class="fact__text">Long-staple fibre from the river valleys</span>
+            <span class="fact__label">Aegean cotton</span>
+            <span class="fact__text">Long-staple fibre, nothing blended in</span>
           </li>
           <li class="fact">
-            <span class="fact__label">Natural dye only</span>
-            <span class="fact__text">Plant and mineral colour, never synthetic</span>
+            <span class="fact__label">Woven in Denizli</span>
+            <span class="fact__text">By a family workshop, finished by hand</span>
           </li>
           <li class="fact">
-            <span class="fact__label">Hand-loomed</span>
-            <span class="fact__text">Woven on shuttle looms, one towel at a time</span>
+            <span class="fact__label">Free delivery</span>
+            <span class="fact__text">On every order over {{freeDeliveryLabel}}</span>
           </li>
           <li class="fact">
-            <span class="fact__label">Washes softer</span>
-            <span class="fact__text">Gains softness and depth with every wash</span>
+            <span class="fact__label">30 day returns</span>
+            <span class="fact__text">Unwashed, in the original wrapping</span>
           </li>
         </ul>
       </div>

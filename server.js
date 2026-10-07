@@ -8,6 +8,7 @@ const express = require('express');
 const Stripe = require('stripe');
 
 const db = require('./db');
+const { CATEGORIES, SITE_IMAGES } = require('./catalogue');
 const { sendOrderConfirmation } = require('./email');
 const { escapeHtml, formatPrice, firstName } = require('./format');
 
@@ -33,18 +34,6 @@ const SHIPPING_COUNTRIES = [
   'GB', 'IE', 'FR', 'DE', 'NL', 'BE', 'LU', 'ES', 'PT', 'IT', 'AT', 'DK', 'SE', 'FI', 'NO',
   'CH', 'PL', 'CZ', 'GR', 'US', 'CA', 'AU', 'NZ',
 ];
-
-// Photography for the homepage. Catalogue photography lives in seed.js.
-const SITE_IMAGES = {
-  hero: {
-    url: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1400&q=80',
-    alt: 'Whitewashed houses and blue domes above the Aegean sea in afternoon light',
-  },
-  story: {
-    url: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1400&q=80',
-    alt: "A craftsperson's hands at work",
-  },
-};
 
 const VIEWS_DIR = path.join(__dirname, 'views');
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -97,7 +86,8 @@ function pageData(page, { title, description, urlPath = '/', ogType = 'website',
     ogType,
     ogImage: absoluteUrl(sizedImage(ogImage, 1200)),
     robots: noindex ? '<meta name="robots" content="noindex">' : '',
-    navCollection: page === 'collection' ? ' aria-current="page"' : '',
+    navShop: page === 'shop' ? ' aria-current="page"' : '',
+    navSets: page === 'sets' ? ' aria-current="page"' : '',
     scripts,
     year: new Date().getFullYear(),
     freeDeliveryPence: FREE_DELIVERY_THRESHOLD,
@@ -110,20 +100,31 @@ function pageData(page, { title, description, urlPath = '/', ogType = 'website',
 // Image and swatch markup
 
 const UNSPLASH = /^https:\/\/images\.unsplash\.com\//;
+const PEXELS = /^https:\/\/images\.pexels\.com\//;
 const HEX_COLOUR = /^#[0-9a-f]{3,8}$/i;
 
-// Unsplash serves any width on request. Local files in public/images are used as they are.
+// Unsplash and Pexels serve any width on request. Local files in public/images are used
+// as they are.
 function sizedImage(url, width) {
-  if (!UNSPLASH.test(url)) return url;
-  const sized = new URL(url);
-  sized.searchParams.set('w', String(width));
-  sized.searchParams.set('q', '80');
-  sized.searchParams.set('auto', 'format');
-  return sized.toString();
+  if (UNSPLASH.test(url)) {
+    const sized = new URL(url);
+    sized.searchParams.set('w', String(width));
+    sized.searchParams.set('q', '80');
+    sized.searchParams.set('auto', 'format');
+    return sized.toString();
+  }
+  if (PEXELS.test(url)) {
+    const sized = new URL(url);
+    sized.searchParams.set('auto', 'compress');
+    sized.searchParams.set('cs', 'tinysrgb');
+    sized.searchParams.set('w', String(width));
+    return sized.toString();
+  }
+  return url;
 }
 
 function srcsetFor(url, widths) {
-  if (!UNSPLASH.test(url)) return '';
+  if (!UNSPLASH.test(url) && !PEXELS.test(url)) return '';
   return widths.map((width) => `${sizedImage(url, width)} ${width}w`).join(', ');
 }
 
@@ -160,29 +161,135 @@ function swatchStyle(variant) {
 }
 
 const CARD_SIZES = {
-  strip: '(max-width: 768px) 78vw, 32vw',
-  grid: '(max-width: 768px) 50vw, 32vw',
+  grid: '(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 420px',
+  wide: '(max-width: 768px) 100vw, 50vw',
 };
 
-function productCard(product, { swatches, sizes }) {
+const CATEGORY_BY_SLUG = new Map(CATEGORIES.map((category) => [category.slug, category]));
+
+function swatchList(product, { size = 'small' } = {}) {
+  const names = product.variants.map((variant) => variant.colour).join(', ');
+  const dots = product.variants
+    .map((variant) => `<span class="swatch swatch--${size}" style="${swatchStyle(variant)}" title="${escapeHtml(variant.colour)}" aria-hidden="true"></span>`)
+    .join('');
+  return `<span class="swatches"><span class="visually-hidden">${product.variants.length} colours: ${escapeHtml(names)}</span>${dots}</span>`;
+}
+
+function pieceCount(product) {
+  return product.contents.reduce((sum, piece) => sum + piece.quantity, 0);
+}
+
+function piecesValue(product) {
+  return product.contents.reduce((sum, piece) => sum + piece.quantity * piece.price, 0);
+}
+
+// One product in a grid. Every card carries the facts a careful buyer looks for: what it
+// is, its size, its cotton and weight, its colours and its price.
+function productCard(product, { sizes = CARD_SIZES.grid } = {}) {
   const lead = product.variants[0];
-  const families = [...new Set(product.variants.map((variant) => variant.family))].join(' ');
-  const colourNames = product.variants.map((variant) => variant.colour).join(', ');
-  const swatchList = swatches
-    ? `<span class="card__swatches"><span class="visually-hidden">Colours: ${escapeHtml(colourNames)}</span>${product.variants
-        .map((variant) => `<span class="swatch swatch--small" style="${swatchStyle(variant)}" aria-hidden="true"></span>`)
-        .join('')}</span>`
-    : '';
+  const badge = product.isSet
+    ? '<span class="card__badge">Sold only as a set</span>'
+    : product.newArrival
+      ? '<span class="card__badge">New</span>'
+      : '';
+  const specs = product.isSet
+    ? [`${pieceCount(product)} pieces`, 'Aegean cotton']
+    : [product.size, `${product.weight} Aegean cotton`];
 
   return `
-        <li class="card" data-families="${escapeHtml(families)}">
-          <a class="card__link" href="/product/${escapeHtml(product.slug)}">
-            <span class="media media--portrait" style="${toneStyle(lead)}">${imageTag(lead.image, lead.imageAlt, { widths: [480, 720, 1000], sizes })}</span>
-            <span class="card__name">${escapeHtml(product.name)}</span>
-            ${swatchList}
-            <span class="card__price">${formatPrice(product.price)}</span>
+          <li class="card reveal">
+            <a class="card__link" href="/product/${escapeHtml(product.slug)}">
+              <span class="card__media media media--portrait" style="${toneStyle(lead)}">
+                ${imageTag(product.image.url, product.image.alt, { widths: [480, 720, 1000], sizes })}
+                ${badge}
+              </span>
+              <span class="card__body">
+                <span class="card__eyebrow">${escapeHtml(product.collection)}</span>
+                <span class="card__name">${escapeHtml(product.name)}</span>
+                <span class="card__summary">${escapeHtml(product.summary)}</span>
+                <span class="card__specs">${specs.map((spec) => `<span>${escapeHtml(spec)}</span>`).join('')}</span>
+                <span class="card__row">
+                  <span class="card__price">${formatPrice(product.price)}</span>
+                  ${swatchList(product)}
+                </span>
+                <span class="card__cta">${product.isSet ? 'Shop the set' : 'Shop now'}<span aria-hidden="true"> →</span></span>
+              </span>
+            </a>
+          </li>`;
+}
+
+function contentsList(product, className = 'contents') {
+  return `<ul class="${className}">${product.contents
+    .map(
+      (piece) => `
+              <li><span class="contents__qty">${piece.quantity} ×</span><span class="contents__name">${escapeHtml(piece.name)}</span><span class="contents__size">${escapeHtml(piece.size)}</span></li>`
+    )
+    .join('')}
+            </ul>`;
+}
+
+// A set on the sets page: a large photograph beside everything that is inside it.
+function setFeature(product, index) {
+  const lead = product.variants[0];
+  const value = piecesValue(product);
+  return `
+        <article class="set-feature reveal${index % 2 ? ' set-feature--reverse' : ''}" id="${escapeHtml(product.slug)}" aria-labelledby="${escapeHtml(product.slug)}-name">
+          <a class="set-feature__media media" href="/product/${escapeHtml(product.slug)}" tabindex="-1" aria-hidden="true" style="${toneStyle(lead)}">
+            ${imageTag(product.image.url, product.image.alt, { widths: [700, 1000, 1400], sizes: CARD_SIZES.wide })}
           </a>
-        </li>`;
+          <div class="set-feature__body">
+            <p class="set-badge">Curated set · sold only together</p>
+            <h2 class="set-feature__name" id="${escapeHtml(product.slug)}-name"><a href="/product/${escapeHtml(product.slug)}">${escapeHtml(product.name)}</a></h2>
+            <p class="set-feature__text">${escapeHtml(product.description)}</p>
+            <h3 class="label">What is inside</h3>
+            ${contentsList(product)}
+            <div class="set-feature__foot">
+              <p class="set-feature__price">${formatPrice(product.price)}${value > product.price ? `<span class="set-feature__value">Pieces separately ${formatPrice(value)}</span>` : ''}</p>
+              ${swatchList(product, { size: 'medium' })}
+            </div>
+            <a class="btn btn--dark" href="/product/${escapeHtml(product.slug)}">Shop the set</a>
+          </div>
+        </article>`;
+}
+
+function fromPrice(products) {
+  const prices = products.map((product) => product.price);
+  return prices.length ? `From ${formatPrice(Math.min(...prices))}` : '';
+}
+
+function categoryHref(category) {
+  return category.slug === 'towel-sets' ? '/sets' : `/shop/${category.slug}`;
+}
+
+function categoryTile(category, products, index) {
+  return `
+          <li class="tile reveal tile--${index + 1}">
+            <a class="tile__link" href="${categoryHref(category)}">
+              <span class="tile__media media">
+                ${imageTag(category.image.url, category.image.alt, { widths: [600, 900, 1300], sizes: index === 0 ? '(max-width: 768px) 100vw, 50vw' : '(max-width: 768px) 100vw, 25vw' })}
+              </span>
+              <span class="tile__caption">
+                <span class="tile__name">${escapeHtml(category.name)}</span>
+                <span class="tile__meta">${escapeHtml(category.size)} · ${escapeHtml(fromPrice(products))}</span>
+              </span>
+            </a>
+          </li>`;
+}
+
+function categoryNav(current) {
+  const links = [{ href: '/shop', name: 'All', slug: 'all' }, ...CATEGORIES.map((category) => ({ href: categoryHref(category), name: category.name, slug: category.slug }))];
+  return `
+      <nav class="cat-nav" aria-label="Categories">
+        <ul class="cat-nav__list">${links
+          .map((link) => `<li><a href="${link.href}"${link.slug === current ? ' aria-current="page"' : ''}>${escapeHtml(link.name)}</a></li>`)
+          .join('')}
+        </ul>
+      </nav>`;
+}
+
+function productGrid(products) {
+  return `<ul class="grid">${products.map((product) => productCard(product)).join('')}
+        </ul>`;
 }
 
 function colourOption(variant, selected) {
@@ -433,15 +540,21 @@ app.post('/webhook', express.raw({ type: 'application/json', limit: '1mb' }), as
   res.json({ received: true });
 });
 
+function editorialImage(image, sizes, className = '') {
+  return imageTag(image.url, image.alt, { widths: [700, 1000, 1500], sizes, className });
+}
+
 app.get('/', (req, res) => {
-  const arrivals = db.listNewArrivals(3);
+  const products = db.listProducts();
+  const inCategory = (slug) => products.filter((product) => product.category === slug);
+
   res.type('html').send(
     render(
       'index',
       pageData('home', {
-        title: 'Pamuq | Hand-loomed Turkish towels',
+        title: 'Pamuq | Luxury Turkish cotton towels from the Aegean',
         description:
-          'Hand-loomed peshtemal from Denizli, Turkey. Light, absorbent and softer with every wash, woven by the same family for three generations.',
+          'Bath towels, hand towels, bath sheets and curated sets woven from long-staple Aegean cotton in Denizli, Turkey. Soft, absorbent and made to last.',
         urlPath: '/',
         heroImage: imageTag(SITE_IMAGES.hero.url, SITE_IMAGES.hero.alt, {
           widths: [900, 1400, 2000],
@@ -449,26 +562,119 @@ app.get('/', (req, res) => {
           eager: true,
           className: 'hero__image',
         }),
-        storyImage: imageTag(SITE_IMAGES.story.url, SITE_IMAGES.story.alt, {
-          widths: [600, 900, 1200],
-          sizes: '(max-width: 768px) 100vw, 40vw',
-        }),
-        newArrivals: arrivals.map((product) => productCard(product, { swatches: false, sizes: CARD_SIZES.strip })).join(''),
+        categoryTiles: CATEGORIES.map((category, index) => categoryTile(category, inCategory(category.slug), index)).join(''),
+        bestsellers: db.listFeatured({ limit: 4 }).map((product) => productCard(product)).join(''),
+        featuredSets: db.listFeatured({ sets: true, limit: 3 }).map((product) => productCard(product)).join(''),
+        whyImage: editorialImage(SITE_IMAGES.why, '(max-width: 768px) 100vw, 45vw'),
+        whyDetail: editorialImage(SITE_IMAGES.whyDetail, '(max-width: 768px) 60vw, 20vw'),
+        cottonImage: editorialImage(SITE_IMAGES.cotton, '(max-width: 768px) 100vw, 50vw'),
+        cottonDetail: editorialImage(SITE_IMAGES.cottonDetail, '(max-width: 768px) 60vw, 22vw'),
+        handsImage: editorialImage(SITE_IMAGES.hands, '(max-width: 768px) 100vw, 40vw'),
       })
     )
   );
 });
 
-app.get('/collection', (req, res) => {
+// The old collection page lives on as the shop.
+app.get('/collection', (req, res) => res.redirect(301, '/shop'));
+
+app.get('/shop', (req, res) => {
   const products = db.listProducts();
+  const sections = CATEGORIES.filter((category) => category.slug !== 'towel-sets')
+    .map((category) => {
+      const items = products.filter((product) => product.category === category.slug);
+      return `
+      <section class="shop-section" id="${category.slug}" aria-labelledby="${category.slug}-title">
+        <header class="shop-section__head reveal">
+          <div>
+            <h2 class="shop-section__title" id="${category.slug}-title">${escapeHtml(category.name)}</h2>
+            <p class="shop-section__meta">${escapeHtml(category.size)} · ${items.length} ${items.length === 1 ? 'style' : 'styles'}</p>
+          </div>
+          <p class="shop-section__intro">${escapeHtml(category.intro)}</p>
+        </header>
+        ${productGrid(items)}
+      </section>`;
+    })
+    .join('');
+
+  const sets = products.filter((product) => product.isSet);
+  const setsCategory = CATEGORY_BY_SLUG.get('towel-sets');
+
   res.type('html').send(
     render(
-      'collection',
-      pageData('collection', {
-        title: 'The Collection | Pamuq',
-        description: 'Every towel woven to order. Ships in 5 to 7 days.',
-        urlPath: '/collection',
-        products: products.map((product) => productCard(product, { swatches: true, sizes: CARD_SIZES.grid })).join(''),
+      'shop',
+      pageData('shop', {
+        title: 'Shop all towels | Pamuq',
+        description: 'Bath towels, hand towels, washcloths, guest towels, bath sheets and curated sets in long-staple Aegean cotton.',
+        urlPath: '/shop',
+        eyebrow: 'The collection',
+        heading: 'Towels worth reaching for',
+        intro:
+          'Four weaves, eight colourways and every size a bathroom needs. Each piece is woven from long-staple Aegean cotton in Denizli and finished by hand.',
+        categoryNav: categoryNav('all'),
+        sections,
+        setsBanner: `
+      <aside class="sets-banner reveal" aria-labelledby="sets-banner-title">
+        <div class="sets-banner__media media">${editorialImage(setsCategory.image, '(max-width: 768px) 100vw, 50vw')}</div>
+        <div class="sets-banner__body">
+          <p class="eyebrow eyebrow--dark">Curated sets</p>
+          <h2 class="sets-banner__title" id="sets-banner-title">Composed to be together</h2>
+          <p class="sets-banner__text">${sets.length} sets, each sold only as a whole and presented in a cotton gift bag. From the Essential Trio to the Full Bathroom Set.</p>
+          <a class="btn btn--dark" href="/sets">Explore the sets</a>
+        </div>
+      </aside>`,
+      })
+    )
+  );
+});
+
+app.get('/shop/:category', (req, res, next) => {
+  const category = CATEGORY_BY_SLUG.get(req.params.category);
+  if (!category) return next();
+  if (category.slug === 'towel-sets') return res.redirect(301, '/sets');
+
+  const items = db.listCategory(category.slug);
+  res.type('html').send(
+    render(
+      'shop',
+      pageData('shop', {
+        title: `${category.name} | Pamuq`,
+        description: category.intro,
+        urlPath: `/shop/${category.slug}`,
+        ogImage: category.image.url,
+        eyebrow: `${category.size} · ${fromPrice(items)}`,
+        heading: category.name,
+        intro: category.intro,
+        categoryNav: categoryNav(category.slug),
+        sections: `
+      <section class="shop-section shop-section--single" aria-label="${escapeHtml(category.name)}">
+        ${productGrid(items)}
+      </section>`,
+        setsBanner: '',
+      })
+    )
+  );
+});
+
+app.get('/sets', (req, res) => {
+  const sets = db.listCategory('towel-sets');
+  const category = CATEGORY_BY_SLUG.get('towel-sets');
+  res.type('html').send(
+    render(
+      'sets',
+      pageData('sets', {
+        title: 'Towel Sets | Pamuq',
+        description: 'Curated sets of Aegean cotton towels, composed to work together and sold only as a complete set.',
+        urlPath: '/sets',
+        ogImage: SITE_IMAGES.sets.url,
+        categoryNav: categoryNav(category.slug),
+        setsImage: imageTag(SITE_IMAGES.sets.url, SITE_IMAGES.sets.alt, {
+          widths: [900, 1400, 2000],
+          sizes: '100vw',
+          eager: true,
+          className: 'sets-hero__image',
+        }),
+        sets: sets.map(setFeature).join(''),
       })
     )
   );
@@ -478,41 +684,81 @@ app.get('/product/:slug', (req, res, next) => {
   const product = db.getProduct(req.params.slug);
   if (!product || product.variants.length === 0) return next();
 
+  const category = CATEGORY_BY_SLUG.get(product.category);
   const selected = product.variants.find((variant) => variant.stock > 0) || product.variants[0];
-  const gallery = product.gallery.slice(0, 3);
+  const images = [product.image, ...product.gallery].slice(0, 4);
   const mainSizes = '(max-width: 768px) 100vw, 55vw';
 
-  const thumbs = [{ url: selected.image, alt: selected.imageAlt }, ...gallery]
+  const thumbs = images
     .map(
       (image, index) => `
               <li>
-                <button class="thumb media media--portrait${index === 0 ? ' is-active' : ''}" type="button" data-thumb data-src="${escapeHtml(image.url)}" data-alt="${escapeHtml(image.alt)}"${index === 0 ? ` aria-current="true" style="${toneStyle(selected)}"` : ''}>
+                <button class="thumb media media--portrait${index === 0 ? ' is-active' : ''}" type="button" data-thumb data-src="${escapeHtml(image.url)}" data-alt="${escapeHtml(image.alt)}" aria-label="Show picture ${index + 1} of ${images.length}"${index === 0 ? ' aria-current="true"' : ''}>
                   ${imageTag(image.url, image.alt, { widths: [160, 240, 360], sizes: '(max-width: 768px) 22vw, 12vw' })}
                 </button>
               </li>`
     )
     .join('');
 
+  // Related pieces: other sets for a set, otherwise the rest of the category, then the
+  // sets that include this piece.
+  const all = db.listProducts();
+  const related = (
+    product.isSet
+      ? all.filter((other) => other.isSet && other.slug !== product.slug)
+      : [
+          ...all.filter((other) => other.category === product.category && other.slug !== product.slug),
+          ...all.filter((other) => other.isSet && other.contents.some((piece) => piece.slug === product.slug)),
+        ]
+  ).slice(0, 4);
+
+  const specs = product.isSet
+    ? [
+        ['Pieces', `${pieceCount(product)} pieces`],
+        ['Material', product.material],
+        ['Presentation', 'Cotton gift bag'],
+      ]
+    : [
+        ['Size', product.size],
+        ['Material', product.material],
+        ['Weave', product.weave],
+        ['Weight', product.weight],
+      ];
+  const value = product.isSet ? piecesValue(product) : 0;
+
   res.type('html').send(
     render(
       'product',
       pageData('product', {
         title: `${product.name} | Pamuq`,
-        description: product.description,
+        description: product.summary || product.description,
         urlPath: `/product/${product.slug}`,
         ogType: 'product',
-        ogImage: selected.image,
+        ogImage: product.image.url,
         scripts: '<script src="/js/product.js" defer></script>',
         slug: product.slug,
         name: product.name,
         priceValue: product.price,
         price: formatPrice(product.price),
+        priceNote: value > product.price ? `Pieces bought separately ${formatPrice(value)}` : '',
+        categoryName: category ? category.name : 'Shop',
+        categoryHref: category ? categoryHref(category) : '/shop',
+        collection: product.collection,
+        summary: product.summary,
         productDescription: product.description,
-        dimensions: product.dimensions,
-        weight: product.weight,
+        feel: product.feel,
+        specs: specs.map(([term, detail]) => `<div><dt>${escapeHtml(term)}</dt><dd>${escapeHtml(detail)}</dd></div>`).join(''),
+        setContents: product.isSet
+          ? `
+        <div class="pdp__set">
+          <p class="set-badge">Curated set · sold only together</p>
+          <h2 class="label">What is inside</h2>
+          ${contentsList(product)}
+        </div>`
+          : '',
         selectedColour: selected.colour,
         toneStyle: toneStyle(selected),
-        mainImage: imageTag(selected.image, selected.imageAlt, {
+        mainImage: imageTag(product.image.url, product.image.alt, {
           widths: [700, 1000, 1400],
           sizes: mainSizes,
           eager: true,
@@ -522,8 +768,15 @@ app.get('/product/:slug', (req, res, next) => {
         mainSizes,
         thumbs,
         colourOptions: product.variants.map((variant) => colourOption(variant, selected)).join(''),
-        addLabel: selected.stock < 1 ? 'Sold out' : 'Add to bag',
+        colourCount: product.variants.length,
+        addLabel: selected.stock < 1 ? 'Sold out' : product.isSet ? 'Add set to bag' : 'Add to bag',
+        addReady: product.isSet ? 'Add set to bag' : 'Add to bag',
         addDisabled: selected.stock < 1 ? ' disabled' : '',
+        related: related.map((other) => productCard(other)).join(''),
+        sizeGuide: CATEGORIES.filter((entry) => entry.slug !== 'towel-sets')
+          .map((entry) => `<div><dt>${escapeHtml(entry.singular)}</dt><dd>${escapeHtml(entry.size)}</dd></div>`)
+          .join(''),
+        relatedTitle: product.isSet ? 'More curated sets' : 'Complete the bathroom',
       })
     )
   );
@@ -716,7 +969,12 @@ app.use((error, req, res, next) => {
   );
 });
 
-if (db.countProducts() === 0) require('./seed').seed();
+// A fresh database, or one seeded from an older catalogue, is loaded from catalogue.js.
+// Stock levels and orders are kept.
+{
+  const { seed, CATALOGUE_VERSION } = require('./seed');
+  if (db.countProducts() === 0 || db.catalogueVersion() !== CATALOGUE_VERSION) seed();
+}
 
 // Started with `node server.js` the app listens on a port. When api/index.js requires it
 // on Vercel it is handed over as a function instead, and nothing listens.

@@ -20,19 +20,30 @@
   var MAIN_WIDTHS = [700, 1000, 1400];
   var THUMB_WIDTHS = [160, 240, 360];
   var UNSPLASH = 'https://images.unsplash.com/';
+  var PEXELS = 'https://images.pexels.com/';
+  var addLabel = addButton.getAttribute('data-add-label') || 'Add to bag';
 
-  /* Unsplash serves any width on request. Other images are used as they are. */
+  function resizable(url) {
+    return url.indexOf(UNSPLASH) === 0 || url.indexOf(PEXELS) === 0;
+  }
+
+  /* Unsplash and Pexels serve any width on request. Other images are used as they are. */
   function sized(url, width) {
-    if (url.indexOf(UNSPLASH) !== 0) return url;
+    if (!resizable(url)) return url;
     var resized = new URL(url);
+    if (url.indexOf(PEXELS) === 0) {
+      resized.searchParams.set('auto', 'compress');
+      resized.searchParams.set('cs', 'tinysrgb');
+    } else {
+      resized.searchParams.set('q', '80');
+      resized.searchParams.set('auto', 'format');
+    }
     resized.searchParams.set('w', String(width));
-    resized.searchParams.set('q', '80');
-    resized.searchParams.set('auto', 'format');
     return resized.toString();
   }
 
   function srcset(url, widths) {
-    if (url.indexOf(UNSPLASH) !== 0) return '';
+    if (!resizable(url)) return '';
     return widths
       .map(function (width) {
         return sized(url, width) + ' ' + width + 'w';
@@ -120,7 +131,7 @@
   function updateAddButton(option) {
     var soldOut = Number(option.getAttribute('data-stock')) < 1;
     addButton.disabled = soldOut;
-    addButton.textContent = soldOut ? 'Sold out' : 'Add to bag';
+    addButton.textContent = soldOut ? 'Sold out' : addLabel;
   }
 
   function onColourChange() {
@@ -133,7 +144,9 @@
     updateAddButton(option);
     setTone(option.getAttribute('data-tone-a'), option.getAttribute('data-tone-b'));
 
-    /* The first thumbnail is always the picture of the chosen colour. */
+    /* The first thumbnail is always the picture of the chosen colour. Colours that share
+       the product photograph leave the gallery where it is. */
+    if (thumbs[0] && thumbs[0].getAttribute('data-src') === url) return;
     if (thumbs[0]) {
       var thumbImage = thumbs[0].querySelector('img');
       thumbs[0].setAttribute('data-src', url);

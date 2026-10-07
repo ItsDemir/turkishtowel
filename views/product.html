@@ -12,40 +12,48 @@
 
       <div class="pdp__info">
         <nav class="breadcrumb" aria-label="Breadcrumb">
-          <a href="/collection">Collection</a>
+          <a href="/shop">Shop</a>
+          <span aria-hidden="true">/</span>
+          <a href="{{categoryHref}}">{{categoryName}}</a>
           <span aria-hidden="true">/</span>
           <span aria-current="page">{{name}}</span>
         </nav>
 
+        <p class="eyebrow eyebrow--dark pdp__collection">{{collection}}</p>
         <h1 class="pdp__name">{{name}}</h1>
-        <p class="pdp__price">{{price}}</p>
+        <p class="pdp__price">{{price}} <span class="pdp__price-note">{{priceNote}}</span></p>
+        <p class="pdp__summary">{{summary}}</p>
         <p class="pdp__description">{{productDescription}}</p>
 
+        <dl class="pdp__specs">{{{specs}}}
+        </dl>
+{{{setContents}}}
+
         <fieldset class="colour">
-          <legend class="visually-hidden">Colour</legend>
+          <legend class="colour__legend">Colour <span class="colour__name" data-colour-name>{{selectedColour}}</span></legend>
           <div class="colour__options">{{{colourOptions}}}
           </div>
-          <p class="colour__name" data-colour-name>{{selectedColour}}</p>
         </fieldset>
 
-        <button class="btn btn--solid" type="button" data-add{{{addDisabled}}}>{{addLabel}}</button>
+        <button class="btn btn--solid" type="button" data-add data-add-label="{{addReady}}"{{{addDisabled}}}>{{addLabel}}</button>
         <p class="pdp__note">Free delivery over {{freeDeliveryLabel}} · Returns within 30 days</p>
 
         <div class="accordion" data-accordion>
           <div class="accordion__item" id="care">
             <h2 class="accordion__heading">
               <button class="accordion__trigger" type="button" id="care-trigger" aria-expanded="false" aria-controls="care-panel" data-accordion-trigger>
-                <span>Material &amp; care</span>
+                <span>The cotton &amp; care</span>
                 <span class="accordion__icon" aria-hidden="true"></span>
               </button>
             </h2>
             <div class="accordion__panel" id="care-panel" role="region" aria-labelledby="care-trigger">
               <div class="accordion__inner">
+                <p class="accordion__lead">{{feel}}</p>
                 <ul class="bullets">
-                  <li>100% Aegean long-staple cotton</li>
-                  <li>Machine wash cold, tumble dry low</li>
-                  <li>Gets softer with every wash</li>
-                  <li>Natural dyes, colourfast after first wash</li>
+                  <li>100% long-staple Aegean cotton, woven in Denizli</li>
+                  <li>Wash warm at 40°C with similar colours before first use</li>
+                  <li>Skip fabric softener, which coats the fibres and lowers absorbency</li>
+                  <li>Tumble dry low or line dry, and shake out the loops before folding</li>
                 </ul>
               </div>
             </div>
@@ -54,15 +62,13 @@
           <div class="accordion__item" id="dimensions">
             <h2 class="accordion__heading">
               <button class="accordion__trigger" type="button" id="dimensions-trigger" aria-expanded="false" aria-controls="dimensions-panel" data-accordion-trigger>
-                <span>Dimensions</span>
+                <span>Size guide</span>
                 <span class="accordion__icon" aria-hidden="true"></span>
               </button>
             </h2>
             <div class="accordion__panel" id="dimensions-panel" role="region" aria-labelledby="dimensions-trigger">
               <div class="accordion__inner">
-                <dl class="specs">
-                  <div><dt>Size</dt><dd>{{dimensions}}</dd></div>
-                  <div><dt>Weight</dt><dd>{{weight}}</dd></div>
+                <dl class="specs">{{{sizeGuide}}}
                 </dl>
               </div>
             </div>
@@ -88,5 +94,16 @@
         </div>
       </div>
     </article>
+
+    <section class="section section--tight related" aria-labelledby="related-title">
+      <div class="container">
+        <header class="section-head reveal">
+          <h2 class="section-title" id="related-title">{{relatedTitle}}</h2>
+          <a class="text-link text-link--arrow" href="/#aegean-cotton">Why Aegean cotton <span aria-hidden="true">→</span></a>
+        </header>
+        <ul class="grid grid--four">{{{related}}}
+        </ul>
+      </div>
+    </section>
 
 {{> footer}}

@@ -1,5 +1,5 @@
-/* Behaviour shared by every page: the header, pictures that fail to load, the colour
-   filter on the collection page and the newsletter form. */
+/* Behaviour shared by every page: the header, pictures that fail to load, sections
+   that fade in as they are reached and the newsletter form. */
 (function () {
   'use strict';
 
@@ -40,47 +40,29 @@
     if (hasSource && image.complete && image.naturalWidth === 0) markBroken(image);
   });
 
-  /* Collection: filter by colour */
+  /* Sections rise gently into view as they are reached. Without JavaScript, or for
+     visitors who ask for less motion, everything is simply shown. */
 
-  var group = document.querySelector('[data-filter-group]');
-  var grid = document.querySelector('[data-grid]');
+  var revealed = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  if (group && grid) {
-    var cards = Array.prototype.slice.call(grid.children);
-    var buttons = Array.prototype.slice.call(group.querySelectorAll('[data-filter]'));
-    var clearButton = group.querySelector('[data-filter-clear]');
-    var status = document.querySelector('[data-filter-status]');
-    var current = null;
-
-    var applyFilter = function (family) {
-      current = family;
-      var shown = 0;
-
-      buttons.forEach(function (button) {
-        button.setAttribute('aria-pressed', button.getAttribute('data-filter') === family ? 'true' : 'false');
-      });
-      cards.forEach(function (card) {
-        var families = (card.getAttribute('data-families') || '').split(' ');
-        var match = !family || families.indexOf(family) !== -1;
-        card.hidden = !match;
-        if (match) shown += 1;
-      });
-
-      clearButton.hidden = !family;
-      status.textContent = family ? 'Showing ' + shown + ' of ' + cards.length + ' towels.' : '';
-    };
-
-    group.addEventListener('click', function (event) {
-      var button = event.target.closest('[data-filter]');
-      if (button) {
-        var family = button.getAttribute('data-filter');
-        applyFilter(current === family ? null : family);
-        return;
-      }
-      if (event.target.closest('[data-filter-clear]')) {
-        applyFilter(null);
-        buttons[0].focus();
-      }
+  if (calm || !('IntersectionObserver' in window)) {
+    revealed.forEach(function (element) {
+      element.classList.add('is-visible');
+    });
+  } else {
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        });
+      },
+      { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }
+    );
+    revealed.forEach(function (element) {
+      observer.observe(element);
     });
   }
 
