@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en-GB">
+<html lang="en-US">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{title}}</title>
   <meta name="description" content="{{description}}">
-  <meta name="theme-color" content="#f5f0e8">
+  <meta name="theme-color" content="#f6f1e9">
   <meta name="color-scheme" content="light">
   {{{robots}}}
   <link rel="canonical" href="{{canonicalUrl}}">
@@ -16,38 +16,88 @@
   <meta property="og:description" content="{{description}}">
   <meta property="og:url" content="{{canonicalUrl}}">
   <meta property="og:image" content="{{ogImage}}">
+  <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{title}}">
+  <meta name="twitter:description" content="{{description}}">
+  <meta name="twitter:image" content="{{ogImage}}">
 
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f5f0e8'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='Georgia,serif' font-size='21' fill='%231d1b17'%3EP%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&amp;family=Inter:wght@300;400&amp;display=swap">
   <link rel="stylesheet" href="/css/main.css">
-  <script>document.documentElement.classList.add('js');</script>
+  <script>
+    (function (root) {
+      root.classList.add('js');
+      try {
+        if (window.localStorage.getItem('pamuq_announce') === 'closed') root.classList.add('announce-closed');
+      } catch (error) {}
+    })(document.documentElement);
+  </script>
+  {{{jsonLd}}}
 </head>
-<body class="page-{{page}}" data-page="{{page}}" data-free-delivery="{{freeDeliveryPence}}">
+<body class="page-{{page}} {{bodyClass}}" data-page="{{page}}" data-locale="{{locale}}" data-currency="{{currency}}" data-free-shipping="{{freeShippingCents}}" data-flat-rate="{{flatRateCents}}" data-popup="{{popup}}" data-gift-max="{{giftMessageMax}}" data-welcome="{{welcomePercent}}% off">
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <header class="site-header" data-site-header>
-    <div class="site-header__inner">
-      <a class="wordmark" href="/" aria-label="Pamuq, home">PAMUQ</a>
+  <div class="site-top" data-site-top>
+    {{{announcementBar}}}
+    <header class="site-header" data-site-header>
+      <div class="site-header__inner">
+        <button class="icon-button menu-toggle" type="button" data-menu-open aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+        </button>
 
-      <nav class="site-nav" aria-label="Primary">
-        <a href="/shop"{{{navShop}}}>Shop</a>
-        <a href="/sets"{{{navSets}}}>Sets</a>
-        <a href="/#aegean-cotton">Aegean Cotton</a>
-      </nav>
+        <a class="wordmark" href="/" aria-label="Pamuq, home">PAMUQ</a>
 
-      <a class="cart-link" href="/cart" data-cart-toggle aria-label="Bag, 0 items">
-        <!-- Tabler Icons "shopping-bag" (MIT), inlined so the page needs no icon font. -->
-        <svg class="ti ti-shopping-bag" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-          <path d="M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.965 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304z"/>
-          <path d="M9 11v-5a3 3 0 0 1 6 0v5"/>
-        </svg>
-        <span class="cart-count" data-cart-count hidden>0</span>
-      </a>
+        <nav class="site-nav" aria-label="Primary">
+          <ul class="site-nav__list">
+            <li class="site-nav__item site-nav__item--mega" data-mega>
+              <button class="site-nav__link" type="button" data-mega-toggle aria-expanded="false" aria-controls="mega-shop"{{{navShop}}}>Shop</button>
+              <div class="mega" id="mega-shop" data-mega-panel hidden>
+                <div class="mega__inner">
+                  {{{megaMenu}}}
+                </div>
+              </div>
+            </li>
+            <li class="site-nav__item"><a class="site-nav__link" href="/sets"{{{navSets}}}>Sets</a></li>
+            <li class="site-nav__item"><a class="site-nav__link" href="/beach-and-pool"{{{navBeach}}}>Beach &amp; Pool</a></li>
+            <li class="site-nav__item"><a class="site-nav__link" href="/gifts"{{{navGifts}}}>Gifts</a></li>
+            <li class="site-nav__item"><a class="site-nav__link" href="/about"{{{navAbout}}}>Our Story</a></li>
+          </ul>
+        </nav>
+
+        <div class="site-header__actions">
+          <button class="icon-button" type="button" data-search-open aria-label="Search" aria-controls="search" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+          </button>
+          <a class="icon-button cart-link" href="/cart" data-cart-toggle aria-label="Cart, 0 items">
+            <!-- Tabler Icons "shopping-bag" (MIT), inlined so the page needs no icon font. -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <path d="M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.965 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304z"/>
+              <path d="M9 11v-5a3 3 0 0 1 6 0v5"/>
+            </svg>
+            <span class="cart-count" data-cart-count hidden>0</span>
+          </a>
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <dialog class="mobile-menu" id="mobile-menu" data-mobile-menu aria-label="Menu">
+    <div class="mobile-menu__head">
+      <a class="wordmark" href="/">PAMUQ</a>
+      <button class="icon-button" type="button" data-menu-close aria-label="Close menu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+      </button>
     </div>
-  </header>
+    <nav class="mobile-menu__body" aria-label="Mobile">
+      {{{mobileMenu}}}
+    </nav>
+  </dialog>
 
   <main id="main" tabindex="-1">

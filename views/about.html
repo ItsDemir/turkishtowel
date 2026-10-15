@@ -1,0 +1,67 @@
+{{> header}}
+
+    <div class="container page-top">
+      <header class="page-head">
+        <p class="eyebrow eyebrow--dark">Our story</p>
+        <h1 class="page-title">Inspired by Bodrum. Woven in {{madeInCountry}}.</h1>
+        <p class="page-sub">Pamuk is the Turkish word for cotton. We make Turkish towels the way we grew up with them: generous, honest and built to last.</p>
+      </header>
+    </div>
+
+    <section class="split split--wide container" aria-labelledby="founder-title">
+      <!-- TODO: add a portrait of the founder as SITE_IMAGES.founder in catalog.js and show it here. -->
+      <div class="split__media media split__media--placeholder" aria-hidden="true"><span>P</span></div>
+      <div class="split__text">
+        <p class="eyebrow eyebrow--dark">Why Pamuq exists</p>
+        <h2 class="section-title" id="founder-title">A towel from home</h2>
+        <!-- TODO: the founder's own words. Replace this paragraph with the personal story. -->
+        <p>Pamuq was started by a founder who grew up on Turkey's Aegean coast, where a good towel is part of every summer day: on the beach, after the hammam, folded on a chair by the sea. Pamuq brings that towel, and that feeling, to American homes.</p>
+      </div>
+    </section>
+
+    <section class="split split--reverse split--wide container" aria-labelledby="bodrum-title">
+      <div class="split__media media">{{{bodrumImage}}}</div>
+      <div class="split__text">
+        <p class="eyebrow eyebrow--dark">Bodrum and the Aegean</p>
+        <h2 class="section-title" id="bodrum-title">The summers that shaped us</h2>
+        <p>Bodrum sits where the Aegean meets the Mediterranean: white houses, blue shutters, a castle above the harbor and the long, warm light of a Turkish summer. It is where our colors come from, from Salt and Sandstone to Aegean blue, and the slow kind of life our towels are made for.</p>
+      </div>
+    </section>
+
+    <section class="split split--wide container" aria-labelledby="workshop-title">
+      <div class="split__media media">{{{workshopImage}}}</div>
+      <div class="split__text">
+        <p class="eyebrow eyebrow--dark">The workshop</p>
+        <h2 class="section-title" id="workshop-title">Woven in {{madeIn}}</h2>
+        <!-- TODO: name the workshop, say how long the family has been weaving, and add photos of the looms and the team. -->
+        <p>Our towels are woven by a family workshop in {{madeIn}}, a region that has woven cloth for generations. They weave to order rather than to a warehouse, finish every hem by hand, and check each towel before it is folded and sent.</p>
+      </div>
+    </section>
+
+    <section class="process container" aria-labelledby="process-title">
+      <h2 class="section-title" id="process-title">From the field to your bathroom</h2>
+      <ol class="process__steps">
+        <li><span class="process__number">01</span><h3 class="process__title">Grown</h3><p>Long staple cotton is grown in the river valleys of Turkey's Aegean region.</p></li>
+        <li><span class="process__number">02</span><h3 class="process__title">Spun</h3><p>The long fibers are spun into fine, strong yarn with few loose ends.</p></li>
+        <li><span class="process__number">03</span><h3 class="process__title">Woven</h3><p>Each towel is woven to order in {{madeIn}}, in plush, ribbed, waffle or flat weave.</p></li>
+        <li><span class="process__number">04</span><h3 class="process__title">Finished by hand</h3><p>Hems are stitched, fringes knotted, and every towel is checked one by one.</p></li>
+        <li><span class="process__number">05</span><h3 class="process__title">Shipped to you</h3><p>Folded, wrapped and sent from {{madeInCountry}} to your door in the US.</p></li>
+      </ol>
+    </section>
+
+    <section class="values container" aria-labelledby="values-title">
+      <h2 class="visually-hidden" id="values-title">What we stand by</h2>
+      <ul class="facts">
+        <li class="fact"><span class="fact__label">No softener coatings</span><span class="fact__text">The softness is the cotton, not a finish that washes out.</span></li>
+        <li class="fact"><span class="fact__label">Nothing blended in</span><span class="fact__text">{{fiberContent}}. No polyester, ever.</span></li>
+        <li class="fact"><span class="fact__label">Made to last</span><span class="fact__text">Double stitched hems and long fibers that keep their loft.</span></li>
+        <li class="fact"><span class="fact__label">Made in {{madeInCountry}}</span><span class="fact__text">Woven to order and finished by hand.</span></li>
+      </ul>
+    </section>
+
+    <section class="cta container" aria-labelledby="cta-title">
+      <h2 class="section-title section-title--large" id="cta-title">Feel the difference for yourself.</h2>
+      <a class="btn btn--dark" href="/shop">Shop the collection</a>
+    </section>
+
+{{> footer}}

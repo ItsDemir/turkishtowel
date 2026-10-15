@@ -1,0 +1,43 @@
+{{> header}}
+
+    <section class="collection-hero" aria-labelledby="beach-title">
+      {{{heroImage}}}
+      <div class="collection-hero__content container">
+        <p class="eyebrow">Beach &amp; Pool</p>
+        <h1 class="collection-hero__title" id="beach-title">From the beaches of Bodrum</h1>
+        <p class="collection-hero__lead">The Turkish towel the way it began: the peshtemal. Light enough to fold into a beach bag, quick to dry, and sand shakes straight off.</p>
+      </div>
+    </section>
+
+    <div class="container page-top page-top--after-hero">
+      {{{breadcrumb}}}
+      {{{categoryNav}}}
+
+      <ul class="benefits" aria-label="Why a Turkish beach towel">
+        <li><span class="benefits__title">Dries fast</span>Flat woven cotton dries in a fraction of the time of thick terry.</li>
+        <li><span class="benefits__title">Packs small</span>A full size peshtemal folds smaller than a paperback.</li>
+        <li><span class="benefits__title">Sand shakes off</span>No loops for sand to hide in. One shake and it is clean.</li>
+        <li><span class="benefits__title">More than a towel</span>A wrap after a swim, a throw on cooler evenings, a picnic blanket.</li>
+      </ul>
+
+      <section class="shop-results" aria-labelledby="beach-grid-title">
+        <header class="section-head">
+          <h2 class="section-title" id="beach-grid-title">Turkish beach towels and peshtemals</h2>
+          <p class="filters__count">{{count}}</p>
+        </header>
+        {{{grid}}}
+      </section>
+
+      <section class="split" aria-labelledby="peshtemal-title">
+        <div class="split__media media">{{{detailImage}}}</div>
+        <div class="split__text">
+          <p class="eyebrow eyebrow--dark">What is a peshtemal?</p>
+          <h2 class="section-title" id="peshtemal-title">The original Turkish towel</h2>
+          <p>For centuries the peshtemal was the cloth of the Turkish hammam: thin, flat woven cotton, finished with a knotted fringe. Today it goes from the bathroom to the beach, the pool and the boat deck, and it is the towel most Americans picture when they hear "Turkish towel".</p>
+          <p>Ours are woven from {{fiberContent}} in {{madeIn}}, with stripes woven in rather than printed, so the color lasts.</p>
+          <a class="text-link text-link--arrow" href="/faq#product">Plush, waffle or peshtemal? <span aria-hidden="true">→</span></a>
+        </div>
+      </section>
+    </div>
+
+{{> footer}}

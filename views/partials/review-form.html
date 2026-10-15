@@ -1,0 +1,27 @@
+        <form class="review-form" id="review-form" data-review-form hidden novalidate>
+          <h3 class="review-form__title">Review the {{name}}</h3>
+          <input type="hidden" name="product" value="{{slug}}">
+          <fieldset class="rating-input">
+            <legend class="field__label">Your rating</legend>
+            <div class="rating-input__stars">
+              <input type="radio" name="rating" id="rating-5" value="5"><label for="rating-5" title="5 stars"><span class="visually-hidden">5 stars</span></label>
+              <input type="radio" name="rating" id="rating-4" value="4"><label for="rating-4" title="4 stars"><span class="visually-hidden">4 stars</span></label>
+              <input type="radio" name="rating" id="rating-3" value="3"><label for="rating-3" title="3 stars"><span class="visually-hidden">3 stars</span></label>
+              <input type="radio" name="rating" id="rating-2" value="2"><label for="rating-2" title="2 stars"><span class="visually-hidden">2 stars</span></label>
+              <input type="radio" name="rating" id="rating-1" value="1"><label for="rating-1" title="1 star"><span class="visually-hidden">1 star</span></label>
+            </div>
+          </fieldset>
+          <label class="field"><span class="field__label">Title</span><input name="title" type="text" maxlength="120"></label>
+          <label class="field"><span class="field__label">Your review</span><textarea name="body" rows="5" maxlength="4000" required></textarea></label>
+          <div class="field-row">
+            <label class="field"><span class="field__label">First name and last initial</span><input name="name" type="text" maxlength="80" autocomplete="name" required></label>
+            <label class="field"><span class="field__label">Email (never shown)</span><input name="email" type="email" autocomplete="email" required></label>
+          </div>
+          <div class="field-row">
+            <label class="field"><span class="field__label">City and state (optional)</span><input name="location" type="text" maxlength="80" placeholder="Austin, TX"></label>
+            <label class="field"><span class="field__label">Color you bought (optional)</span><select name="color"><option value="">Choose a color</option>{{{colors}}}</select></label>
+          </div>
+          <div class="honeypot" aria-hidden="true"><label>Company <input name="company" type="text" tabindex="-1" autocomplete="off"></label></div>
+          <button class="btn btn--dark" type="submit">Send review</button>
+          <p class="form-message" role="status" data-review-status></p>
+        </form>

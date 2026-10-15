@@ -1,0 +1,18 @@
+    <section class="signup" aria-labelledby="signup-title">
+      <div class="container signup__inner">
+        <div class="signup__text">
+          <p class="eyebrow eyebrow--dark">Join our list</p>
+          <h2 class="signup__title" id="signup-title">{{welcomePercent}}% off your first order.</h2>
+          <p class="signup__lead">New colorways, care notes and stories from the Aegean, a few times a month.</p>
+        </div>
+        <form class="newsletter newsletter--inline" data-newsletter data-source="{{source}}" novalidate>
+          <label class="visually-hidden" for="signup-email">Email address</label>
+          <div class="newsletter__field">
+            <input id="signup-email" name="email" type="email" autocomplete="email" placeholder="Email address" required>
+            <button type="submit">Subscribe</button>
+          </div>
+          <div class="honeypot" aria-hidden="true"><label>Company <input name="company" type="text" tabindex="-1" autocomplete="off"></label></div>
+          <p class="newsletter__status" role="status" data-newsletter-status></p>
+        </form>
+      </div>
+    </section>

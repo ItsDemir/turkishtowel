@@ -1,0 +1,27 @@
+{{> header}}
+
+    <div class="container page-top contact">
+      <header class="page-head">
+        <p class="eyebrow eyebrow--dark">Contact</p>
+        <h1 class="page-title">We would love to hear from you.</h1>
+        <p class="page-sub">Questions about an order, a towel or a gift. {{responseTime}}</p>
+        {{{supportEmail}}}
+        {{{address}}}
+      </header>
+
+      <form class="contact-form" data-contact-form novalidate>
+        <div class="field-row">
+          <label class="field"><span class="field__label">Name</span><input name="name" type="text" autocomplete="name" maxlength="120" required></label>
+          <label class="field"><span class="field__label">Email</span><input name="email" type="email" autocomplete="email" required></label>
+        </div>
+        <label class="field"><span class="field__label">Order number (optional)</span><input name="order" type="text" maxlength="40" placeholder="PAM-"></label>
+        <label class="field"><span class="field__label">Message</span><textarea name="message" rows="6" maxlength="4000" required></textarea></label>
+        <div class="honeypot" aria-hidden="true"><label>Company <input name="company" type="text" tabindex="-1" autocomplete="off"></label></div>
+        <button class="btn btn--dark" type="submit">Send message</button>
+        <p class="form-message" role="status" data-contact-status></p>
+      </form>
+
+      <p class="contact__more">Looking for something quick? Our <a href="/faq">FAQ</a> covers sizes, care, shipping and returns.</p>
+    </div>
+
+{{> footer}}
