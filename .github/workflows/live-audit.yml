@@ -28,6 +28,7 @@ jobs:
             echo "$(curl -s -o /dev/null -w '%{http_code} %{size_download}' "https://turkishtowel.vercel.app$path") $path"
           done
       - name: Image optimizer and stock photos
+        continue-on-error: true
         run: |
           node -e "
             (async () => {
@@ -39,11 +40,17 @@ jobs:
                 const body = await r.arrayBuffer();
                 console.log(r.status, r.headers.get('content-type'), body.byteLength, u.slice(0, 120));
               }
-              const { PHOTOS } = require('./catalog');
-              for (const [k, p] of Object.entries(PHOTOS)) {
-                const r = await fetch(p.src + '?auto=compress&cs=tinysrgb&w=640').catch((e) => ({ status: 'ERR ' + e.message }));
-                console.log('photo', r.status, k);
+              const { PRODUCTS, CATEGORIES, SITE_IMAGES } = require('./catalog');
+              const srcs = new Set();
+              for (const p of PRODUCTS) for (const i of p.images) srcs.add(i.src);
+              for (const c of CATEGORIES) srcs.add(c.image.src);
+              for (const i of Object.values(SITE_IMAGES)) if (i) srcs.add(i.src);
+              let ok = 0;
+              for (const src of srcs) {
+                const r = await fetch(src + '?auto=compress&cs=tinysrgb&w=640').catch((e) => ({ status: 'ERR ' + e.message }));
+                if (r.status === 200) ok += 1; else console.log('photo', r.status, src);
               }
+              console.log('stock photos ok', ok, 'of', srcs.size);
             })();
           "
       - name: Lighthouse (mobile)
