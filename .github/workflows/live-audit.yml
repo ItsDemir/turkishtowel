@@ -1,0 +1,65 @@
+name: live-audit
+on:
+  push:
+    branches: [claude/pamuq-ecommerce-store-9f0ptu]
+    paths: [.github/workflows/live-audit.yml]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for the new production deployment
+        run: |
+          for i in $(seq 1 40); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://turkishtowel.vercel.app/beach-and-pool)
+            echo "attempt $i: $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 15
+          done
+          exit 1
+      - name: Routes
+        run: |
+          for path in / /shop /shop/bath-towels /shop/towel-sets /sets /beach-and-pool /gifts /about /contact /faq /cart /shipping /returns /privacy /terms /accessibility /product/ege-bath-towel /product/the-full-bathroom-set /product/bodrum-peshtemal /sitemap.xml /robots.txt /feeds/google.xml /catalog.json /site.webmanifest /api/cart /collection /nope /products/manifest.json /icons/icon.svg /favicon.ico; do
+            echo "$(curl -s -o /dev/null -w '%{http_code} %{size_download}' "https://turkishtowel.vercel.app$path") $path"
+          done
+      - name: Image optimizer and stock photos
+        run: |
+          node -e "
+            (async () => {
+              const html = await (await fetch('https://turkishtowel.vercel.app/product/ege-bath-towel')).text();
+              const urls = [...new Set([...html.matchAll(/\/_vercel\/image\?[^\"' ,]+/g)].map((m) => m[0].replace(/&amp;/g, '&')))];
+              console.log('optimizer urls on page', urls.length);
+              for (const u of urls.slice(0, 4)) {
+                const r = await fetch('https://turkishtowel.vercel.app' + u, { headers: { accept: 'image/avif,image/webp,*/*' } });
+                const body = await r.arrayBuffer();
+                console.log(r.status, r.headers.get('content-type'), body.byteLength, u.slice(0, 120));
+              }
+              const { PHOTOS } = require('./catalog');
+              for (const [k, p] of Object.entries(PHOTOS)) {
+                const r = await fetch(p.src + '?auto=compress&cs=tinysrgb&w=640').catch((e) => ({ status: 'ERR ' + e.message }));
+                console.log('photo', r.status, k);
+              }
+            })();
+          "
+      - name: Lighthouse (mobile)
+        run: |
+          for path in / /shop /product/ege-bath-towel /product/bodrum-guest-towel; do
+            name=$(echo "$path" | tr '/' '_')
+            npx -y lighthouse@12 "https://turkishtowel.vercel.app$path" --quiet --chrome-flags="--headless=new --no-sandbox" --form-factor=mobile --output=json --output-path="lh$name.json" || true
+            node -e "
+              const r = require('./lh$name.json'); const a = r.audits;
+              console.log('PAGE $path');
+              console.log(Object.values(r.categories).map((c) => c.title + ' ' + Math.round(c.score * 100)).join(' | '));
+              console.log(['first-contentful-paint','largest-contentful-paint','total-blocking-time','cumulative-layout-shift','speed-index'].map((k) => k + ' ' + a[k].displayValue).join(' | '));
+              for (const [k, c] of Object.entries(r.categories)) for (const ref of c.auditRefs) { const x = a[ref.id]; if (x.score !== null && x.score < 0.9 && ref.weight > 0) console.log('  low', k, ref.id, x.score, x.displayValue || ''); }
+              const lcp = a['largest-contentful-paint-element']; if (lcp && lcp.details) console.log('  LCP element', JSON.stringify(lcp.details.items?.[0]?.items?.[0]?.node?.snippet || '').slice(0, 200));
+              const bad = a['network-requests'].details.items.filter((i) => !i.statusCode || i.statusCode >= 400);
+              console.log('  failed requests', bad.length, bad.map((i) => i.statusCode + ' ' + i.url.slice(0, 90)).join(' ; '));
+              console.log('  total bytes', Math.round(a['total-byte-weight'].numericValue / 1024) + ' KiB');
+            "
+          done
