@@ -186,13 +186,14 @@ public/
   js/shop.js           filters and sort
   js/site.js           header, mega menu, search, mobile menu, popup, announcement bar
   products/            real product photos
+  fonts/               Cormorant Garamond and Inter, Latin subset, with their licenses
   icons/               favicon and app icons
 views/                 pages, partials and policies
 ```
 
 ## Design notes
 
-* Type is Cormorant Garamond for headings and Inter for text. Colors are CSS variables at the top of `main.css`.
+* Type is Cormorant Garamond for headings and Inter for text, both served from `public/fonts` (SIL Open Font License) so the page never waits on another domain. Colors are CSS variables at the top of `main.css`.
 * Mobile first, from 375px. Tap targets are at least 44px and form fields use 16px text so phones do not zoom.
 * Motion is quiet and is switched off for visitors who ask for reduced motion. Nothing is hidden when JavaScript is off.
 * Every interactive element works from the keyboard, with visible focus. The cart drawer, search, mobile menu and email popup keep focus inside while open, close on Escape and return focus to where they came from.
