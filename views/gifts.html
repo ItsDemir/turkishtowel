@@ -1,0 +1,30 @@
+{{> header}}
+
+    <section class="collection-hero" aria-labelledby="gifts-title">
+      {{{heroImage}}}
+      <div class="collection-hero__content container">
+        <p class="eyebrow">Gifts</p>
+        <h1 class="collection-hero__title" id="gifts-title">Turkish towel gifts they will use every day</h1>
+        <p class="collection-hero__lead">Sets arrive in a cotton gift bag. Add a gift message at checkout and we leave the prices off the packing slip.</p>
+      </div>
+    </section>
+
+    <div class="container page-top page-top--after-hero">
+      {{{orderBy}}}
+      <nav class="jump" aria-label="Gift guide">
+        <ul class="jump__list">{{{jumpLinks}}}</ul>
+      </nav>
+      {{{sections}}}
+
+      <section class="gift-section" aria-labelledby="occasions-title">
+        <header class="section-head">
+          <div>
+            <h2 class="section-title" id="occasions-title">By occasion</h2>
+            <p class="section-lead">A few ideas for the moments that call for a good towel.</p>
+          </div>
+        </header>
+        {{{occasions}}}
+      </section>
+    </div>
+
+{{> footer}}

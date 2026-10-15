@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
+  "buildCommand": "node scripts/photos.js",
   "outputDirectory": "public",
   "build": {
     "env": {
@@ -11,6 +12,15 @@
     "api/index.js": {
       "includeFiles": "views/**"
     }
+  },
+  "images": {
+    "sizes": [160, 320, 480, 640, 750, 828, 1080, 1200, 1600, 1920, 2400],
+    "formats": ["image/avif", "image/webp"],
+    "minimumCacheTTL": 2678400,
+    "remotePatterns": [
+      { "protocol": "https", "hostname": "images.pexels.com" },
+      { "protocol": "https", "hostname": "images.unsplash.com" }
+    ]
   },
   "rewrites": [
     { "source": "/(.*)", "destination": "/api" }

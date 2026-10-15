@@ -1,13 +1,22 @@
 {{> header}}
 
     <div class="container page-top">
-      <header class="page-head reveal">
+      {{{breadcrumb}}}
+      <header class="page-head">
         <p class="eyebrow eyebrow--dark">{{eyebrow}}</p>
         <h1 class="page-title">{{heading}}</h1>
         <p class="page-sub">{{intro}}</p>
       </header>
       {{{categoryNav}}}
-      {{{sections}}}
+      {{{filters}}}
+      <noscript><p class="filters__count">{{count}}</p></noscript>
+      <section class="shop-results" aria-label="Products">
+        {{{grid}}}
+        <div class="empty"{{{empty}}} data-filters-empty>
+          <p class="empty__title">Nothing matches those filters.</p>
+          <a class="btn btn--outline" href="?" data-filters-clear>Clear all filters</a>
+        </div>
+      </section>
       {{{setsBanner}}}
     </div>
 

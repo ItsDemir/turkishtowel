@@ -2,47 +2,68 @@
 
     <article class="pdp container" data-product data-slug="{{slug}}" data-name="{{name}}" data-price="{{priceValue}}">
       <div class="pdp__gallery gallery" data-gallery>
-        <div class="gallery__frame media media--portrait" style="{{toneStyle}}" data-gallery-frame>
-          {{{mainImage}}}
-          <img class="gallery__layer" data-gallery-layer alt="" sizes="{{mainSizes}}" decoding="async">
+        <div class="gallery__stage">
+          <button class="gallery__frame media media--portrait" type="button" style="{{toneStyle}}" data-gallery-frame aria-label="Zoom picture">
+            {{{mainImage}}}
+            <span class="gallery__zoom" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
+            </span>
+          </button>
+          <button class="gallery__step gallery__step--prev" type="button" data-gallery-prev aria-label="Previous picture">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+          <button class="gallery__step gallery__step--next" type="button" data-gallery-next aria-label="Next picture">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <p class="gallery__count" aria-hidden="true" data-gallery-count></p>
         </div>
-        <ul class="thumbs" aria-label="Product images">{{{thumbs}}}
+        <ul class="thumbs" aria-label="Product pictures" data-thumbs>{{{thumbs}}}
         </ul>
       </div>
 
       <div class="pdp__info">
-        <nav class="breadcrumb" aria-label="Breadcrumb">
-          <a href="/shop">Shop</a>
-          <span aria-hidden="true">/</span>
-          <a href="{{categoryHref}}">{{categoryName}}</a>
-          <span aria-hidden="true">/</span>
-          <span aria-current="page">{{name}}</span>
-        </nav>
+        {{{breadcrumb}}}
 
         <p class="eyebrow eyebrow--dark pdp__collection">{{collection}}</p>
         <h1 class="pdp__name">{{name}}</h1>
-        <p class="pdp__price">{{price}} <span class="pdp__price-note">{{priceNote}}</span></p>
+        {{{rating}}}
+        <p class="pdp__price">{{{priceMarkup}}}</p>
+        {{{payLater}}}
         <p class="pdp__summary">{{summary}}</p>
-        <p class="pdp__description">{{productDescription}}</p>
 
-        <dl class="pdp__specs">{{{specs}}}
-        </dl>
-{{{setContents}}}
-
-        <fieldset class="colour">
-          <legend class="colour__legend">Colour <span class="colour__name" data-colour-name>{{selectedColour}}</span></legend>
-          <div class="colour__options">{{{colourOptions}}}
+        <fieldset class="color">
+          <legend class="color__legend">Color <span class="color__name" data-color-name>{{selectedColor}}</span></legend>
+          <div class="color__options">{{{colorOptions}}}
           </div>
         </fieldset>
+{{{setContents}}}
+        <div class="buy" data-buy>
+          <div class="quantity" role="group" aria-label="Quantity">
+            <button type="button" data-qty="-1" aria-label="Decrease quantity">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/></svg>
+            </button>
+            <input type="number" inputmode="numeric" min="1" max="10" value="1" aria-label="Quantity" data-qty-input>
+            <button type="button" data-qty="1" aria-label="Increase quantity">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            </button>
+          </div>
+          <button class="btn btn--solid" type="button" data-add data-add-label="{{addReady}}"{{{addDisabled}}}>{{addLabel}}</button>
+        </div>
+        <p class="pdp__delivery">{{delivery}}</p>
+        {{{trustRow}}}
+        {{{payments}}}
+        {{{makeItASet}}}
 
-        <button class="btn btn--solid" type="button" data-add data-add-label="{{addReady}}"{{{addDisabled}}}>{{addLabel}}</button>
-        <p class="pdp__note">Free delivery over {{freeDeliveryLabel}} · Returns within 30 days</p>
+        <dl class="pdp__details">{{{details}}}
+        </dl>
+        <p class="pdp__fiber">{{fiberLine}}</p>
+        <p class="pdp__description">{{productDescription}}</p>
 
         <div class="accordion" data-accordion>
           <div class="accordion__item" id="care">
             <h2 class="accordion__heading">
               <button class="accordion__trigger" type="button" id="care-trigger" aria-expanded="false" aria-controls="care-panel" data-accordion-trigger>
-                <span>The cotton &amp; care</span>
+                <span>Cotton &amp; care</span>
                 <span class="accordion__icon" aria-hidden="true"></span>
               </button>
             </h2>
@@ -50,44 +71,47 @@
               <div class="accordion__inner">
                 <p class="accordion__lead">{{feel}}</p>
                 <ul class="bullets">
-                  <li>100% long-staple Aegean cotton, woven in Denizli</li>
-                  <li>Wash warm at 40°C with similar colours before first use</li>
-                  <li>Skip fabric softener, which coats the fibres and lowers absorbency</li>
+                  <li>{{fiberContent}}, woven in {{madeIn}}</li>
+                  <li>Wash warm before first use, with similar colors</li>
                   <li>Tumble dry low or line dry, and shake out the loops before folding</li>
+                  <li>Avoid bleach, which weakens and fades any cotton</li>
                 </ul>
+                <p class="accordion__note"><strong>Why no fabric softener?</strong> Softener coats the fibers with a waxy film. The towel feels slippery rather than soft and absorbs far less water. Good cotton does not need it.</p>
               </div>
             </div>
           </div>
 
-          <div class="accordion__item" id="dimensions">
+          <div class="accordion__item" id="size-guide">
             <h2 class="accordion__heading">
-              <button class="accordion__trigger" type="button" id="dimensions-trigger" aria-expanded="false" aria-controls="dimensions-panel" data-accordion-trigger>
+              <button class="accordion__trigger" type="button" id="size-trigger" aria-expanded="false" aria-controls="size-panel" data-accordion-trigger>
                 <span>Size guide</span>
                 <span class="accordion__icon" aria-hidden="true"></span>
               </button>
             </h2>
-            <div class="accordion__panel" id="dimensions-panel" role="region" aria-labelledby="dimensions-trigger">
+            <div class="accordion__panel" id="size-panel" role="region" aria-labelledby="size-trigger">
               <div class="accordion__inner">
-                <dl class="specs">{{{sizeGuide}}}
+                {{{sizeGuide}}}
+                <dl class="specs">{{{sizeTable}}}
                 </dl>
               </div>
             </div>
           </div>
 
-          <div class="accordion__item" id="shipping">
+          <div class="accordion__item" id="shipping-returns">
             <h2 class="accordion__heading">
               <button class="accordion__trigger" type="button" id="shipping-trigger" aria-expanded="false" aria-controls="shipping-panel" data-accordion-trigger>
-                <span>Shipping</span>
+                <span>Shipping &amp; returns</span>
                 <span class="accordion__icon" aria-hidden="true"></span>
               </button>
             </h2>
             <div class="accordion__panel" id="shipping-panel" role="region" aria-labelledby="shipping-trigger">
               <div class="accordion__inner">
                 <ul class="bullets">
-                  <li>Every towel is woven to order and ships within 5 to 7 days</li>
-                  <li>Free delivery over {{freeDeliveryLabel}}, otherwise {{deliveryFeeLabel}}</li>
-                  <li>Returns accepted within 30 days, unwashed and in the original wrapping</li>
+                  <li>{{delivery}}</li>
+                  <li>Free US shipping over {{freeShippingLabel}}, otherwise {{flatRateLabel}}</li>
+                  <li>Returns within {{returnDays}} days, unwashed and in the original packaging</li>
                 </ul>
+                <p class="accordion__note"><a href="/shipping">Shipping policy</a> · <a href="/returns">Returns</a> · <a href="/faq">FAQ</a></p>
               </div>
             </div>
           </div>
@@ -95,15 +119,54 @@
       </div>
     </article>
 
+    <section class="section section--tight reviews" id="reviews" aria-labelledby="reviews-title" data-reviews>
+      <div class="container">
+        <h2 class="section-title" id="reviews-title">Reviews</h2>
+        {{{reviews}}}
+      </div>
+    </section>
+
     <section class="section section--tight related" aria-labelledby="related-title">
       <div class="container">
-        <header class="section-head reveal">
-          <h2 class="section-title" id="related-title">{{relatedTitle}}</h2>
-          <a class="text-link text-link--arrow" href="/#aegean-cotton">Why Aegean cotton <span aria-hidden="true">→</span></a>
+        <header class="section-head">
+          <h2 class="section-title" id="related-title">Pairs well with</h2>
+          <a class="text-link text-link--arrow" href="/shop">Shop all <span aria-hidden="true">→</span></a>
         </header>
         <ul class="grid grid--four">{{{related}}}
         </ul>
       </div>
     </section>
+
+    <section class="section section--tight related" aria-labelledby="recent-title" data-recent hidden>
+      <div class="container">
+        <h2 class="section-title" id="recent-title">Recently viewed</h2>
+        <ul class="mini-grid" data-recent-list></ul>
+      </div>
+    </section>
+
+    <div class="sticky-buy" data-sticky-buy aria-hidden="true">
+      <span class="swatch swatch--medium" style="{{selectedSwatch}}" data-sticky-swatch></span>
+      <span class="sticky-buy__text">
+        <span class="sticky-buy__name">{{name}}</span>
+        <span class="sticky-buy__meta"><span data-sticky-color>{{selectedColor}}</span> · {{{priceMarkup}}}</span>
+      </span>
+      <button class="btn btn--solid sticky-buy__button" type="button" data-sticky-add tabindex="-1">{{addReady}}</button>
+    </div>
+
+    <dialog class="lightbox" data-lightbox aria-label="Zoomed picture">
+      <div class="lightbox__stage" data-lightbox-stage>
+        <img class="lightbox__image" alt="" data-lightbox-image>
+      </div>
+      <button class="icon-button lightbox__close" type="button" data-lightbox-close aria-label="Close zoom">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+      </button>
+      <button class="icon-button lightbox__step lightbox__step--prev" type="button" data-lightbox-prev aria-label="Previous picture">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <button class="icon-button lightbox__step lightbox__step--next" type="button" data-lightbox-next aria-label="Next picture">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <p class="lightbox__hint">Pinch or tap to zoom</p>
+    </dialog>
 
 {{> footer}}

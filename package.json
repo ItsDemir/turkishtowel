@@ -11,7 +11,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "photos": "node scripts/photos.js",
+    "test": "node --test \"test/**/*.test.js\""
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

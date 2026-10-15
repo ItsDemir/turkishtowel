@@ -1,191 +1,199 @@
 # Pamuq
 
-A direct to consumer store for luxury Turkish towels, woven from long-staple Aegean cotton in Denizli. It is a small stack that you own end to end: plain HTML, CSS and JavaScript in the browser, a thin Node and Express server, Stripe for payment, Resend for order emails and a single SQLite file for orders and stock. There is no Shopify, no WooCommerce and no platform fee.
+A direct to consumer store for luxury Turkish towels, sold in the US. The towels are woven from 100% Turkish cotton in Denizli, Turkey, and the brand takes its mood from Bodrum on the Aegean coast. It is a small stack that you own end to end: plain HTML, CSS and JavaScript in the browser, a thin Node and Express server, Stripe Checkout for payment, Resend for order and support emails and a single SQLite file for orders and stock. There is no Shopify, no WooCommerce and no platform fee.
 
-## What is in it
+The live site is https://turkishtowel.vercel.app.
 
-Every page is served by Express with a shared header and footer:
+## Ground rules the code follows
 
-* `/` the homepage: the Aegean hero, the six categories, the most loved pieces, "Why a good towel matters", the curated sets and the Aegean cotton story
-* `/shop` every towel, grouped by category
-* `/shop/:category` one category: `bath-towels`, `hand-towels`, `washcloths`, `guest-towels` or `bath-sheets`
-* `/sets` the curated towel sets, which are sold only as a whole
-* `/product/:slug` a product page with gallery, specifications, colours, what is inside a set, and related pieces
-* `/cart` the bag
-* `/checkout` not a page: the bag is posted here and the server sends the customer to Stripe
+* **US conventions.** Prices in USD, American spelling, sizes in inches first with centimeters second, dates such as October 15, 2026, and shipping counted in US business days.
+* **No invented social proof.** No made up reviews, ratings, review counts, press logos, "as seen in" badges or "people are viewing this" counters. Reviews ship empty and only real ones are ever shown, low ratings included.
+* **No fake scarcity.** No countdown timers or invented stock warnings.
+* **Truthful origin.** Every product page states its fiber content and "Made in Turkey". Every "woven in" and "made in" line reads `brand.madeIn` in `config.js`. Bodrum is the inspiration, never the claimed place of manufacture.
+* **Settings, not hard coding.** Money, shipping, offers, contact details and brand facts live in `config.js`. Products live in `catalog.js`.
+
+## Pages
+
+* `/` the homepage: Bodrum hero, categories, best sellers, why a good towel matters, sets, the Bodrum and Denizli story, the welcome offer
+* `/shop` every towel, with filters for category, weave, color and price and a sort order. `/shop/:category` opens it on one category: `bath-towels`, `hand-towels`, `washcloths`, `guest-towels` or `bath-sheets` (`/shop/towel-sets` redirects to `/sets`)
+* `/sets` the curated sets, sold only as a whole
+* `/beach-and-pool` the peshtemal and the towels that suit the beach
+* `/gifts` sets, gifts by price and gifts by occasion
+* `/product/:slug` a product page: gallery per color with zoom, size in inches and centimeters, weave and weight, care, what is inside a set, shipping estimate in real dates, reviews and related pieces
+* `/cart` the cart, with gift options. A drawer also slides in from the right on every page
+* `/checkout` not a page: the cart is posted here and the server sends the customer to Stripe
 * `/order-confirmed` the thank you page, which checks the payment with Stripe
+* `/about`, `/contact`, `/faq`
+* `/shipping`, `/returns`, `/privacy`, `/terms`, `/accessibility` the policies. Each carries a `TODO: review with a lawyer` comment and must be checked by one before launch
+* `/sitemap.xml`, `/robots.txt`, `/feeds/google.xml` (Google Merchant Center feed), `/catalog.json`, `/site.webmanifest`
 
-The old `/collection` address redirects to `/shop`. The bag also has a drawer that slides in from the right when something is added.
+The old `/collection` address redirects to `/shop`.
 
 ## The range
 
-The catalogue lives in `catalogue.js`. It was shaped by a look at how the most successful Turkish cotton towel brands (Parachute, Brooklinen, Quince, Boll & Branch and Coyuchi, with Rise & Fall and Hamam as UK price references) organise and price their ranges:
+`catalog.js` holds the whole range:
 
-* **Four weaves**, named after places on the Aegean coast: Ege Plush (700 gsm loop terry, the signature), Assos Rib (550 gsm ribbed terry), Datça Waffle (380 gsm honeycomb) and Bodrum Peshtemal (240 gsm flat weave with a knotted fringe).
-* **Six categories** in standard UK sizes: washcloths 30 × 30 cm, guest towels 40 × 60 cm, hand towels 50 × 90 cm, bath towels 70 × 140 cm, bath sheets 100 × 180 cm, and towel sets.
-* **Eight colourways** taken from the region: Salt, Raw Cotton, Sandstone, Pamukkale, Olive Grove, Aegean, Terracotta and Basalt, plus two woven stripes for the peshtemal.
-* **Five curated sets**: The Essential Trio, The Couple's Set, The Guest Bathroom Set, The Full Bathroom Set and The Hammam Spa Set. Each is one product with its own price, about 10% below its pieces bought separately, and lists what is inside. A set is added to the bag as a single item and is never split.
+* **Four weaves**, named after places on the Aegean coast: Ege Plush (700 gsm loop terry), Assos Rib (550 gsm ribbed terry), Datça Waffle (380 gsm honeycomb) and Bodrum Peshtemal (240 gsm flat weave with a hand knotted fringe).
+* **Six categories**: washcloths 12 × 12 in, guest towels 16 × 23.5 in, hand towels 19.5 × 35.5 in, bath towels 27.5 × 55 in, bath sheets 39.5 × 71 in, and towel sets. Sizes are stored in centimeters and converted to the nearest half inch for display (`format.js`), so the two can never disagree.
+* **Ten colorways**: Salt, Raw Cotton, Sandstone, Pamukkale, Olive Grove, Aegean, Terracotta and Basalt, plus two woven stripes for the peshtemal.
+* **Five sets**, each one product with its own price about 10% below its pieces bought separately.
 
-Prices sit at the top of the UK market for Turkish cotton: £9 to £10 for a washcloth, £42 to £46 for a bath towel and £72 to £78 for a bath sheet.
+Prices in USD:
 
-The copy only makes claims that are true of good long-staple cotton in general. Before going live, check them against your mill's specification: "long-staple", "Aegean" and "woven in Denizli" should match your supply chain, and words such as "organic" need GOTS certification, which is why the site does not use them.
+| Product | Price |
+| --- | --- |
+| Ege Bath Towel | $58 |
+| Assos Rib Bath Towel | $62 |
+| Datça Waffle Bath Towel | $48 |
+| Ege Hand Towel | $32 |
+| Assos Rib Hand Towel | $34 |
+| Datça Waffle Hand Towel | $28 |
+| Ege Washcloth | $14 |
+| Datça Waffle Washcloth | $12 |
+| Ege Guest Towel | $22 |
+| Bodrum Guest Towel | $24 |
+| Ege Bath Sheet | $98 |
+| Assos Rib Bath Sheet | $108 |
+| Bodrum Peshtemal | $68 |
+| The Essential Trio | $94 |
+| The Couple's Set | $188 |
+| The Guest Bathroom Set | $122 |
+| The Full Bathroom Set | $428 |
+| The Hammam Spa Set | $224 |
 
-## Prerequisites
+To change a price, edit it in `catalog.js` (in cents), bump `CATALOG_VERSION` at the top of the file and deploy.
 
-* Node 22 or newer. The current better-sqlite3 needs it, and Node 18 and 20 are no longer supported by the Node project.
-* A Stripe account. Test mode is enough to start.
-* The [Stripe CLI](https://docs.stripe.com/stripe-cli) for receiving webhooks on your own machine.
-* A Resend account and an API key.
+## Settings (`config.js`)
+
+* `brand` the name, where the towels are made, the fiber content and the origin line.
+* `shipping` the free shipping threshold ($100), the flat rate below it ($10), the weaving and transit times used for the arrival dates, and `dutiesIncluded`, which turns on the "Duties included" lines once shipping is Delivered Duty Paid.
+* `returns` the return window in days.
+* `offers.welcome` the 10% first order offer and its code, `WELCOME10`. The code must also be created as a promotion code in the Stripe Dashboard.
+* `payments` the payment methods shown under Add to Cart and in the footer, and the optional pay later line.
+* `support`, `company` the support address, the legal name and the mailing address, read from environment variables.
+* `social` Instagram, Pinterest and TikTok links. Empty ones are hidden.
+* `campaign` the seasonal homepage slot and its dates.
+* `analytics` switches Vercel Web Analytics on.
 
 ## Setup
+
+Node 22 or newer is required.
 
 ```bash
 git clone <your repository URL>
 cd turkishtowel
 npm install
 cp .env.example .env
+npm start
 ```
 
-Open `.env` and fill in:
+Then open http://localhost:3000. The site works without any keys, so you can browse it first. `npm run dev` restarts on file changes and `npm test` runs the smoke tests.
 
-* `STRIPE_SECRET_KEY` your test secret key, which starts with `sk_test_`
-* `STRIPE_WEBHOOK_SECRET` the signing secret that `stripe listen` prints, see below
-* `RESEND_API_KEY` your Resend key, which starts with `re_`
-* `PORT` defaults to 3000
+The server seeds an empty database by itself and re-seeds whenever `CATALOG_VERSION` is higher than the one the database was seeded with. `npm run seed` does the same by hand. Seeding never touches stock levels or orders.
 
-Three more settings are optional:
+### Environment variables
 
-* `SITE_URL` the public address of the site, used for Stripe return links and links in emails. It defaults to `http://localhost:PORT`.
-* `EMAIL_FROM` the sender of the order emails. The default is Resend's sandbox sender, which only delivers to the email address of your own Resend account. Verify a domain in Resend to send to customers.
-* `DATABASE_PATH` where the SQLite file lives. It defaults to `pamuq.db` in the project folder.
+| Variable | Needed for |
+| --- | --- |
+| `STRIPE_SECRET_KEY` | Checkout. Starts with `sk_test_` or `sk_live_`. |
+| `STRIPE_WEBHOOK_SECRET` | The `/webhook` endpoint. Starts with `whsec_`. |
+| `STRIPE_AUTOMATIC_TAX` | Set to `1` after turning on Stripe Tax in the Dashboard, so sales tax is calculated at checkout. |
+| `RESEND_API_KEY` | Order confirmations and contact form messages. |
+| `EMAIL_FROM` | The sender, on a domain verified in Resend, for example `Pamuq <orders@pamuq.com>`. |
+| `SUPPORT_EMAIL` | Shown on the contact page and policies, and where contact form messages are sent. |
+| `COMPANY_LEGAL_NAME` | Used in the terms and privacy policy. |
+| `COMPANY_ADDRESS` | The business mailing address. Required by CAN-SPAM in every marketing email. |
+| `KLAVIYO_API_KEY`, `KLAVIYO_LIST_ID` | Optional. Newsletter sign ups are always kept in SQLite and are also added to this Klaviyo list when set. |
+| `VERCEL_ANALYTICS` | Set to `1` after turning on Web Analytics in the Vercel project. |
+| `IMAGE_OPTIMIZER` | Set to `off` to stop routing photos through Vercel Image Optimization. |
+| `SITE_URL` | The public https address, used in Stripe return links, emails, canonical links and the sitemap. |
+| `DATABASE_PATH` | Where the SQLite file lives. Defaults to `pamuq.db`. |
+| `PORT` | Defaults to 3000. |
 
-## Run
+## Stripe
+
+* Checkout is a Stripe Checkout Session in USD that accepts US shipping addresses only. The server reads only product ids and quantities from the cart and takes names and prices from `catalog.js`, so an edited cart cannot change what is charged.
+* Shipping is added by the server: free from $100, otherwise $10.
+* **Payment methods** (cards, Apple Pay, Google Pay, Link, Klarna, Afterpay) are switched on in the Stripe Dashboard, not in code. Keep `payments.methods` in `config.js` in step with what is switched on.
+* **Discount codes** are Stripe promotion codes. Create `WELCOME10` (10% off, first order only) in the Dashboard.
+* **Sales tax**: turn on Stripe Tax, register in the states where you have nexus, then set `STRIPE_AUTOMATIC_TAX=1`.
+* **Gift orders**: the cart can mark an order as a gift with a message and hidden prices. Both are stored with the order and printed on the confirmation email.
+
+### Webhook
+
+Locally, with the server running:
 
 ```bash
-node seed.js
-node server.js
-```
-
-Then open http://localhost:3000. The same commands are available as `npm run seed`, `npm start` and `npm run dev` (which restarts on file changes).
-
-`seed.js` loads the 18 products from `catalogue.js`. It is safe to run again: it updates products, colours and pictures, removes products that are no longer in the catalogue, and never touches stock levels or orders. You rarely need it: the server seeds an empty database by itself, and also re-seeds whenever `CATALOGUE_VERSION` at the top of `catalogue.js` is higher than the one the database was seeded with. Bump that number after editing the catalogue.
-
-The site works without any keys, so you can browse and style it first. Checkout needs `STRIPE_SECRET_KEY`, the webhook needs `STRIPE_WEBHOOK_SECRET` and emails need `RESEND_API_KEY`.
-
-## Stripe webhook setup
-
-In a second terminal, with the server running:
-
-```bash
-stripe login
 stripe listen --forward-to localhost:3000/webhook
 ```
 
-The CLI prints a signing secret that starts with `whsec_`. Put it in `.env` as `STRIPE_WEBHOOK_SECRET` and restart the server.
+Put the `whsec_` secret it prints in `.env`. Pay with card `4242 4242 4242 4242`, any future date and any CVC. Both the confirmation page and the webhook record the order; whichever arrives first wins and the order is stored and emailed once. In production, add an endpoint at `https://your-domain/webhook` for `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
 
-Now take a test payment. Add a towel to the bag, choose Proceed to checkout and pay with card number `4242 4242 4242 4242`, any future expiry date and any three digit CVC. Stripe sends the customer to `/order-confirmed`, and at about the same moment sends `checkout.session.completed` to `/webhook`.
+Only sessions created by this site (metadata `store=pamuq`) become orders.
 
-Either one records the order in SQLite, takes the units out of stock and sends the confirmation email. The two can arrive in any order, or together, and the order is still stored once and the email sent once. If Resend is down when the order arrives, the order is kept and the email is tried again the next time the confirmation page is opened.
+## Photography
 
-Two details worth knowing:
+Real product photos go in `public/products/{product}/{color}/` and replace the stock photos automatically, color by color. `public/products/README.md` has the folder names, the shot list and the priority order, and `docs/image-style-guide.md` has the look. After adding photos run `npm run photos` and commit the photos with `public/products/manifest.json`.
 
-* Only Checkout Sessions created by this site become orders. They carry the metadata `store=pamuq`, so events from other projects on the same Stripe account, and fixtures from `stripe trigger`, are acknowledged and ignored. Use a test payment instead.
-* The webhook handler also accepts `checkout.session.async_payment_succeeded`, for payment methods that confirm later.
+Until then the site uses free stock photography from Pexels, listed in `PHOTOS` at the top of `catalog.js`. The homepage hero, story, workshop and founder photos are in `SITE_IMAGES` in the same file.
 
-## How it works
+On Vercel every photo, local or remote, is served through Vercel Image Optimization (`/_vercel/image`, set up in `vercel.json`), which resizes it for each screen and converts it to AVIF or WebP. If the optimizer ever fails, the browser falls back to the original file.
 
-* **The bag** lives in `localStorage` under `pamuq_cart` as a JSON array of `{ id, slug, name, colour, price, quantity, image }`. The server keeps no basket.
-* **Checkout** is a POST to `/checkout`. The server reads only the item ids and quantities from the request and takes names and prices from the database, so an edited bag cannot change what is charged. It creates a Stripe Checkout Session in `payment` mode, in GBP, with the shipping address and phone number required, and sends the customer to Stripe's hosted page. A plain form post is answered with a 303 redirect, and the bag page asks for JSON so it can show errors in place.
-* **Delivery** is free over £100 and £5 below that. Both numbers, the list of countries Stripe will accept an address from, and the largest quantity per line are constants at the top of `server.js`.
-* **Stock** is one number per colour in the `variants` table. Checkout refuses a bag that asks for more than is in stock, and a paid order takes its units out. A sold out colour shows as sold out on its product page.
-* **Money** is stored and calculated in pence as integers everywhere. Prices are only turned into text, such as £68, when they are displayed.
-* **Orders** go in the `orders` table, with the order number `PAM-` followed by a timestamp. Newsletter sign ups go in `subscribers`.
-* **Stripe.js** is loaded from `https://js.stripe.com/v3/` on the bag page only, so that Stripe can spot fraud on the way to Checkout. The payment itself is a redirect, so no publishable key is needed.
-* **The bag icon** is the Tabler Icons `shopping-bag` drawing, inlined as SVG so that the site needs no icon font.
+## Reviews
 
-## Product photography
+Reviews are read from `data/reviews.json` through the adapter in `lib/reviews.js`. The file ships empty. Reviews submitted on the site are stored in SQLite for you to check and are not published automatically. Moving to Judge.me, Okendo, Yotpo or Stamped only means rewriting `load()` in the adapter. Product structured data includes a rating only when real reviews exist.
 
-The pictures are free stock photographs from Pexels (towels, bathrooms and cotton) and Unsplash (the hero and the weaver's hands), loaded from their image services at the size each screen needs. I chose them from their descriptions, because this sandbox cannot load either site, so look at every one on the live site and swap any that do not suit. If a photo cannot load, its frame shows the colour of the towel instead, so a bad ID looks tidy rather than broken.
+## Analytics
 
-Every colourway of a product shares the product's photographs, and the swatch beside them shows the colour. Real photography of your own towels, shot in each colour, is the single biggest improvement you can make. The look to aim for: towels folded on stone or pale wood, hanging from a slim rail, rolled beside a bath, and close crops of the loops and the hem, in soft daylight with warm neutral props.
+`window.PamuqTrack(name, data)` in `public/js/cart.js` sends GA4 style ecommerce events (`view_item`, `select_item`, `add_to_cart`, `view_cart`, `begin_checkout`, `purchase` and `sign_up`) to Vercel Web Analytics or to Google Analytics, whichever is on the page. Nothing is sent when neither is installed. There are no advertising pixels, so there is no cookie banner; add one before adding any.
 
-To use your own photographs:
+## Vercel
 
-1. Export each picture as a JPEG in portrait 4:5, about 1600 pixels wide, and copy it into `public/images/`, for example `ege-bath-towel.jpg`.
-2. In `catalogue.js`, replace the Pexels ID in the `PHOTOS` list with the path, for example `picture('/images/ege-bath-towel.jpg', 'Ege Bath Towel folded on a travertine stool')`. A product's first picture is `image` and the next three are `gallery`.
-3. To give a single colour its own photograph, add `image: picture('/images/ege-bath-towel-aegean.jpg', '...')` to that colour.
-4. The hero and the editorial pictures are in `SITE_IMAGES` in the same file.
-5. Bump `CATALOGUE_VERSION` and restart the server. Stock and orders are untouched.
+The site runs on Vercel from `main`. `api/index.js` hands the Express app to Vercel as one function, `vercel.json` routes every request that is not a file in `public/` to it, and the build step regenerates the photo manifest.
 
-Pexels and Unsplash resize pictures on request, but local files are served as they are, so export them at sensible sizes.
-
-## Going live
-
-1. **Stripe.** In the Dashboard, switch to live mode and copy the live secret key into `STRIPE_SECRET_KEY`. Under Developers and Webhooks, add an endpoint at `https://your-domain/webhook` for the events `checkout.session.completed` and `checkout.session.async_payment_succeeded`, then copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
-2. **Resend.** Verify your sending domain, then set `EMAIL_FROM` to an address on it, for example `Pamuq <orders@your-domain>`. The unsubscribe link in the email is a placeholder that opens a message to that address, so swap in your mailing list provider's link when you have one.
-3. **Site address.** Set `SITE_URL` to the public https address and `NODE_ENV` to `production`, which also turns on template caching.
-4. **Deploy** to Railway, Render or Fly.io. The start command is `npm start`, and the build step is `npm install`. The hosts set `PORT` themselves.
-5. **Keep the database.** SQLite is a single file, so it needs storage that survives a restart. Create a volume or persistent disk, mount it at `/data`, and set `DATABASE_PATH=/data/pamuq.db`. On Fly.io that is `fly volumes create`, on Railway a Volume, on Render a Disk. Without one, orders disappear on every deploy. Back it up by copying the file, or with `sqlite3 pamuq.db ".backup backup.db"`.
-6. **First start.** The server seeds an empty database by itself. Run a test purchase in live mode with a real card, then refund it from the Dashboard.
-
-## Previewing on Vercel
-
-This is for looking at the site at a shareable address. It is not a way to run the shop.
-
-Vercel runs the server as short-lived functions with no persistent disk. On Vercel the SQLite file therefore lives in the temporary folder, each function instance gets its own copy, and a copy starts empty and is seeded again whenever an instance starts. Pages, product browsing, the bag and the drawer all work. Orders, stock levels and newsletter sign ups are not kept, and a test payment can be recorded twice if two instances handle it. Do not point live Stripe keys at a preview. A real shop on Vercel needs its data in a hosted database, which is a separate change.
-
-To deploy from the Vercel dashboard, choose Add New, then Project, import this GitHub repository, leave the framework preset as Other, and deploy. Vercel builds `main` as the production deployment and every other branch as a preview, and builds again on each push.
-
-To deploy from your own machine instead, which needs no GitHub connection:
-
-```bash
-git checkout main
-git pull
-npx vercel
-```
-
-Log in when asked, accept the defaults, and open the address it prints. Add `--prod` to the last command to publish it as the production deployment.
-
-Good to know:
-
-* No settings are required. Without `SITE_URL`, the site uses the project's own address on a production deployment and the deployment's address on a preview. Set `SITE_URL` for a custom domain.
-* To try checkout on a preview, add a test `STRIPE_SECRET_KEY` and a `RESEND_API_KEY` under Environment Variables in the project settings. `STRIPE_WEBHOOK_SECRET` is not needed, because the confirmation page records the order and sends the email by itself.
-* Vercel puts a login in front of preview addresses and the long deployment addresses (Deployment Protection), so anyone who is not on your team sees a Vercel sign in page there. The project's own production address, such as `https://turkishtowel.vercel.app`, is public. To share a preview, turn protection off for previews or create a shareable link in the project settings.
-* How it is wired: `api/index.js` hands the Express app to Vercel as one function, and `vercel.json` sends every request that is not a file in `public/` to it. The entry point also removes the request and response helpers that Vercel adds, so Express reads request bodies and sends responses the way it does everywhere else.
+Vercel functions have no lasting disk, so SQLite lives in the temporary folder and starts fresh on each instance. Pages, the cart and checkout all work, and orders are still recorded in Stripe and emailed, but the order table, newsletter sign ups, review submissions and contact messages are not kept. Before taking real orders, move that data to a hosted database (Vercel Postgres, Neon, Turso or Supabase) or run the server on a host with a persistent disk (Railway, Render or Fly.io, with `DATABASE_PATH` on a volume).
 
 ## Project layout
 
 ```
-server.js              Express server, routes and Stripe logic
-catalogue.js           categories, weaves, colourways, products, sets and photography
-seed.js                loads the catalogue into SQLite
-db.js                  SQLite setup and queries
-email.js               the order confirmation email and the Resend call
-format.js              price formatting and HTML escaping shared by the two above
-package.json
-.env.example
-api/index.js           the entry point Vercel uses for a preview
-vercel.json            sends requests to that entry point
+server.js              routes
+config.js              every business setting
+catalog.js             categories, weaves, colors, products, sets, prices and stock photos
+store.js               products as the pages see them: catalog plus stock, photos and reviews
+db.js                  SQLite: stock, orders, subscribers, review submissions, messages
+email.js               order confirmation and contact form emails through Resend
+format.js              prices, sizes, dates and HTML escaping
+seed.js                loads the catalog into SQLite
+content/faq.js         the FAQ, also used for FAQPage structured data
+data/reviews.json      published reviews (empty)
+lib/
+  checkout.js          cart pricing, the Stripe session and recording orders
+  shipping.js          US business days and arrival dates
+  images.js            image URLs, srcset and the Vercel optimizer
+  photos.js            reads public/products
+  reviews.js           the reviews adapter
+  seo.js               structured data
+  subscribe.js         newsletter sign ups and Klaviyo
+  render.js, markup.js templates and shared markup
+scripts/photos.js      writes public/products/manifest.json
+test/smoke.test.js     smoke tests (npm test)
+docs/                  the image style guide
+api/index.js           the Vercel entry point
 public/
   css/main.css         every style on the site
-  js/cart.js           the bag, the header count and the drawer
-  js/product.js        colour swatches, gallery, add to bag, accordion
-  js/site.js           header, scroll reveal, newsletter, failed pictures
-  images/              put your own photographs here
-views/
-  partials/header.html the document head and the site header
-  partials/footer.html the footer, the drawer and the scripts
-  index.html  shop.html  sets.html  product.html  cart.html  order-confirmed.html
-  error.html           used for pages that are not found
+  js/cart.js           cart, drawer, free shipping bar, gift options, analytics helper
+  js/product.js        gallery, zoom, swatches, add to cart, sticky bar
+  js/shop.js           filters and sort
+  js/site.js           header, mega menu, search, mobile menu, popup, announcement bar
+  products/            real product photos
+  icons/               favicon and app icons
+views/                 pages, partials and policies
 ```
-
-A few small additions to the layout in the brief: `catalogue.js`, so the range can be edited in one place, `format.js`, because the server and the email both need the same price formatting and escaping, `js/site.js`, for behaviour that every page shares, and `api/index.js` with `vercel.json` for the Vercel preview.
 
 ## Design notes
 
-* The homepage hero is the original design: the same photograph, overlay, type and fade. Everything after it is a warm, light editorial layout in undyed cotton, stone and Aegean tones, with one dark section for the Aegean cotton story and the footer.
-* Type is Cormorant Garamond for headings and Inter for text. The colours are CSS variables at the top of `main.css`.
-* Motion is quiet: sections rise gently into view as they are reached, product pictures zoom slightly on hover, and the bag drawer slides. All of it is switched off for visitors who ask for reduced motion, and nothing is hidden when JavaScript is off.
-* Every interactive element works from the keyboard. The drawer makes the page behind it inert while it is open, closes on Escape and returns focus to where it came from.
-* Small text on the light background uses `--muted` (`#6c6558`) and `--clay` (`#93512f`), which both pass WCAG AA contrast at small sizes.
-* The main breakpoint is 768px, with a few layouts that also adjust at 900px and 1100px.
+* Type is Cormorant Garamond for headings and Inter for text. Colors are CSS variables at the top of `main.css`.
+* Mobile first, from 375px. Tap targets are at least 44px and form fields use 16px text so phones do not zoom.
+* Motion is quiet and is switched off for visitors who ask for reduced motion. Nothing is hidden when JavaScript is off.
+* Every interactive element works from the keyboard, with visible focus. The cart drawer, search, mobile menu and email popup keep focus inside while open, close on Escape and return focus to where they came from.
+* Small text uses `--muted` and `--clay`, which pass WCAG AA contrast.
