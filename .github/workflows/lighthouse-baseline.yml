@@ -1,0 +1,43 @@
+name: lighthouse-baseline
+on:
+  push:
+    branches: [claude/pamuq-ecommerce-store-9f0ptu]
+    paths: [.github/workflows/lighthouse-baseline.yml]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Image status
+        run: |
+          node -e "
+            const { PRODUCTS, CATEGORIES, SITE_IMAGES } = require('./catalogue');
+            const urls = new Map();
+            const add = (img, where) => { const u = img.url.includes('pexels') ? img.url + '?auto=compress&cs=tinysrgb&w=1000' : img.url.replace('w=1400', 'w=1000'); urls.set(u, (urls.get(u) || []).concat(where)); };
+            for (const p of PRODUCTS) { add(p.image, p.slug + ':main'); p.gallery.forEach((g, i) => add(g, p.slug + ':g' + (i + 1))); }
+            for (const c of CATEGORIES) add(c.image, 'tile:' + c.slug);
+            for (const [k, v] of Object.entries(SITE_IMAGES)) add(v, 'site:' + k);
+            (async () => { for (const [u, where] of urls) { const r = await fetch(u, { method: 'GET' }).catch((e) => ({ status: 'ERR ' + e.message, headers: new Map() })); const len = r.headers.get ? r.headers.get('content-length') : ''; console.log(r.status, len, u.split('?')[0].split('/').slice(-2).join('/'), where.join(' ')); } })();
+          "
+      - name: Lighthouse (mobile)
+        run: |
+          for path in / /product/ege-bath-towel /product/bodrum-guest-towel; do
+            name=$(echo "$path" | tr '/' '_')
+            npx -y lighthouse@12 "https://turkishtowel.vercel.app$path" --quiet --chrome-flags="--headless=new --no-sandbox" --form-factor=mobile --output=json --output-path="lh$name.json" || true
+            node -e "
+              const r = require('./lh$name.json'); const a = r.audits;
+              console.log('PAGE $path');
+              console.log(Object.values(r.categories).map((c) => c.title + ' ' + Math.round(c.score * 100)).join(' | '));
+              console.log(['first-contentful-paint','largest-contentful-paint','total-blocking-time','cumulative-layout-shift','speed-index'].map((k) => k + ' ' + a[k].displayValue).join(' | '));
+              for (const [k, c] of Object.entries(r.categories)) for (const ref of c.auditRefs) { const x = a[ref.id]; if (x.score !== null && x.score < 0.9 && ref.weight > 0) console.log('  low', k, ref.id, x.score, x.displayValue || ''); }
+              const lcp = a['largest-contentful-paint-element']; if (lcp && lcp.details) console.log('  LCP element', JSON.stringify(lcp.details.items?.[0]?.items?.[0]?.node?.snippet || '').slice(0, 200));
+              const bad = a['network-requests'].details.items.filter((i) => !i.statusCode || i.statusCode >= 400);
+              console.log('  failed requests', bad.length, bad.map((i) => i.statusCode + ' ' + i.url.slice(0, 90)).join(' ; '));
+              console.log('  total bytes', Math.round(a['total-byte-weight'].numericValue / 1024) + ' KiB');
+            "
+          done
