@@ -53,20 +53,20 @@ jobs:
               console.log('stock photos ok', ok, 'of', srcs.size);
             })();
           "
-      - name: Lighthouse (mobile)
+      - name: Lighthouse (mobile) with diagnostics
         run: |
-          for path in / /shop /product/ege-bath-towel /product/bodrum-guest-towel; do
+          for path in / /shop /product/ege-bath-towel / /shop /product/ege-bath-towel; do
             name=$(echo "$path" | tr '/' '_')
-            npx -y lighthouse@12 "https://turkishtowel.vercel.app$path" --quiet --chrome-flags="--headless=new --no-sandbox" --form-factor=mobile --output=json --output-path="lh$name.json" || true
+            npx -y lighthouse@12 "https://turkishtowel.vercel.app$path" --quiet --chrome-flags="--headless=new --no-sandbox" --form-factor=mobile --only-categories=performance,accessibility --output=json --output-path="lh$name.json" || true
             node -e "
               const r = require('./lh$name.json'); const a = r.audits;
-              console.log('PAGE $path');
-              console.log(Object.values(r.categories).map((c) => c.title + ' ' + Math.round(c.score * 100)).join(' | '));
-              console.log(['first-contentful-paint','largest-contentful-paint','total-blocking-time','cumulative-layout-shift','speed-index'].map((k) => k + ' ' + a[k].displayValue).join(' | '));
-              for (const [k, c] of Object.entries(r.categories)) for (const ref of c.auditRefs) { const x = a[ref.id]; if (x.score !== null && x.score < 0.9 && ref.weight > 0) console.log('  low', k, ref.id, x.score, x.displayValue || ''); }
-              const lcp = a['largest-contentful-paint-element']; if (lcp && lcp.details) console.log('  LCP element', JSON.stringify(lcp.details.items?.[0]?.items?.[0]?.node?.snippet || '').slice(0, 200));
-              const bad = a['network-requests'].details.items.filter((i) => !i.statusCode || i.statusCode >= 400);
-              console.log('  failed requests', bad.length, bad.map((i) => i.statusCode + ' ' + i.url.slice(0, 90)).join(' ; '));
-              console.log('  total bytes', Math.round(a['total-byte-weight'].numericValue / 1024) + ' KiB');
+              console.log('PAGE $path', Object.values(r.categories).map((c) => c.title + ' ' + Math.round(c.score * 100)).join(' | '));
+              console.log('  ', ['first-contentful-paint','largest-contentful-paint','speed-index','server-response-time'].map((k) => k + ' ' + a[k].displayValue).join(' | '));
+              const fcpObserved = a.metrics.details.items[0].observedFirstContentfulPaint;
+              console.log('   observed FCP', Math.round(fcpObserved), 'ms; observed LCP', Math.round(a.metrics.details.items[0].observedLargestContentfulPaint));
+              const rb = a['render-blocking-resources']; if (rb.details) for (const i of rb.details.items) console.log('   blocking', Math.round(i.wastedMs), 'ms', i.url.slice(0, 100));
+              const t0 = a['network-requests'].details.items[0].networkRequestTime;
+              for (const i of a['network-requests'].details.items) { if (i.networkRequestTime - t0 < fcpObserved) console.log('   before FCP', Math.round(i.networkRequestTime - t0), Math.round(i.networkEndTime - t0), i.priority, Math.round(i.transferSize / 1024) + 'KiB', i.url.slice(0, 110)); }
+              const cc = a['color-contrast']; if (cc.details) for (const i of cc.details.items.slice(0, 4)) console.log('   contrast', i.node.selector);
             "
           done
