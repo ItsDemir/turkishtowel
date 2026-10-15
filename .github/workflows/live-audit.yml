@@ -1,0 +1,73 @@
+name: live-audit
+on:
+  push:
+    branches: [claude/pamuq-ecommerce-store-9f0ptu]
+    paths: [.github/workflows/live-audit.yml]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for the new production deployment
+        run: |
+          for i in $(seq 1 40); do
+            if curl -s https://turkishtowel.vercel.app/ | grep -q '/fonts/inter-300.woff2'; then echo "new deployment is live"; exit 0; fi
+            echo "attempt $i: still the old deployment"
+            sleep 15
+          done
+          exit 1
+      - name: Routes
+        run: |
+          for path in /fonts/inter-300.woff2 / /shop /shop/bath-towels /shop/towel-sets /sets /beach-and-pool /gifts /about /contact /faq /cart /shipping /returns /privacy /terms /accessibility /product/ege-bath-towel /product/the-full-bathroom-set /product/bodrum-peshtemal /sitemap.xml /robots.txt /feeds/google.xml /catalog.json /site.webmanifest /api/cart /collection /nope /products/manifest.json /icons/icon.svg /favicon.ico; do
+            echo "$(curl -s -o /dev/null -w '%{http_code} %{size_download}' "https://turkishtowel.vercel.app$path") $path"
+          done
+      - name: Image optimizer and stock photos
+        continue-on-error: true
+        run: |
+          node -e "
+            (async () => {
+              const html = await (await fetch('https://turkishtowel.vercel.app/product/ege-bath-towel')).text();
+              const urls = [...new Set([...html.matchAll(/\/_vercel\/image\?[^\"' ,]+/g)].map((m) => m[0].replace(/&amp;/g, '&')))];
+              console.log('optimizer urls on page', urls.length);
+              for (const u of urls.slice(0, 4)) {
+                const r = await fetch('https://turkishtowel.vercel.app' + u, { headers: { accept: 'image/avif,image/webp,*/*' } });
+                const body = await r.arrayBuffer();
+                console.log(r.status, r.headers.get('content-type'), body.byteLength, u.slice(0, 120));
+              }
+              const { PRODUCTS, CATEGORIES, SITE_IMAGES } = require('./catalog');
+              const srcs = new Set();
+              for (const p of PRODUCTS) for (const i of p.images) srcs.add(i.src);
+              for (const c of CATEGORIES) srcs.add(c.image.src);
+              for (const i of Object.values(SITE_IMAGES)) if (i) srcs.add(i.src);
+              let ok = 0;
+              for (const src of srcs) {
+                const r = await fetch(src + '?auto=compress&cs=tinysrgb&w=640').catch((e) => ({ status: 'ERR ' + e.message }));
+                if (r.status === 200) ok += 1; else console.log('photo', r.status, src);
+              }
+              console.log('stock photos ok', ok, 'of', srcs.size);
+            })();
+          "
+      - name: Lighthouse (mobile) with diagnostics
+        run: |
+          for path in / /shop /product/ege-bath-towel /product/bodrum-guest-towel / /shop /product/ege-bath-towel /product/bodrum-guest-towel; do
+            name=$(echo "$path" | tr '/' '_')
+            npx -y lighthouse@12 "https://turkishtowel.vercel.app$path" --quiet --chrome-flags="--headless=new --no-sandbox" --form-factor=mobile --output=json --output-path="lh$name.json" || true
+            node -e "
+              const r = require('./lh$name.json'); const a = r.audits;
+              console.log('PAGE $path', Object.values(r.categories).map((c) => c.title + ' ' + Math.round(c.score * 100)).join(' | '));
+              console.log('  ', ['first-contentful-paint','largest-contentful-paint','speed-index','server-response-time'].map((k) => k + ' ' + a[k].displayValue).join(' | '));
+              const fcpObserved = a.metrics.details.items[0].observedFirstContentfulPaint;
+              console.log('   observed FCP', Math.round(fcpObserved), 'ms; observed LCP', Math.round(a.metrics.details.items[0].observedLargestContentfulPaint));
+              const rb = a['render-blocking-resources']; if (rb.details) for (const i of rb.details.items) console.log('   blocking', Math.round(i.wastedMs), 'ms', i.url.slice(0, 100));
+              const fonts = a['network-requests'].details.items.filter((i) => i.url.includes('font'));
+              console.log('   font requests', fonts.map((i) => i.statusCode + ' ' + i.url.replace('https://turkishtowel.vercel.app', '')).join(' ; '));
+              const bad = a['network-requests'].details.items.filter((i) => !i.statusCode || i.statusCode >= 400);
+              console.log('   failed requests', bad.length);
+              for (const [k, c] of Object.entries(r.categories)) for (const ref of c.auditRefs) { const x = a[ref.id]; if (x.score !== null && x.score < 0.9 && ref.weight > 0) console.log('   low', k, ref.id, x.score, x.displayValue || ''); }
+            "
+          done
