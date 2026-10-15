@@ -1110,13 +1110,8 @@ html.announce-closed .announce {
   transition: transform 1200ms var(--ease);
 }
 
-.tile__media::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(18, 16, 13, 0.66) 0%, rgba(18, 16, 13, 0) 55%);
-}
-
+/* The shade sits behind the caption itself, dark enough under the words to keep them
+   readable on the palest photo, or on the plain tone before a photo arrives. */
 .tile__caption {
   position: absolute;
   inset: auto 0 0 0;
@@ -1124,8 +1119,10 @@ html.announce-closed .announce {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 28px;
+  padding: 72px 28px 28px;
   color: var(--hero-white);
+  background: linear-gradient(to top, rgba(18, 16, 13, 0.74) 0%, rgba(18, 16, 13, 0.64) 55%, rgba(18, 16, 13, 0) 100%);
+  text-shadow: 0 1px 14px rgba(18, 16, 13, 0.35);
 }
 
 .tile__name {
@@ -1170,7 +1167,7 @@ html.announce-closed .announce {
   }
 
   .tile__caption {
-    padding: 16px;
+    padding: 48px 16px 16px;
   }
 
   .tile__name {
@@ -1184,7 +1181,7 @@ html.announce-closed .announce {
 }
 
 /* Product cards. Every card has the same picture ratio, and its price and swatches sit
-   on the same line as its neighbours'. */
+   on the same line as its neighbors'. */
 
 .grid {
   display: grid;
@@ -2002,7 +1999,6 @@ html.announce-closed .announce {
   line-height: 1.4;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  opacity: 0.85;
 }
 
 .site-footer__bottom {

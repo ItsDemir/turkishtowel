@@ -1,4 +1,4 @@
-/* Behaviour shared by every page: the header, the offers bar, the Shop menu, the mobile
+/* Behavior shared by every page: the header, the offers bar, the Shop menu, the mobile
    menu, search, pictures that fail to load, text that rises into view, accordions, the
    newsletter forms and sign up pop up, and the contact form. */
 (function () {
