@@ -7,6 +7,9 @@ const os = require('os');
 const path = require('path');
 const Database = require('better-sqlite3');
 
+// SQLite keeps what changes while the shop runs: stock, orders, newsletter sign ups,
+// review submissions and contact messages. Product words and pictures live in catalog.js.
+//
 // On Vercel the project folder is read-only and only the temporary folder can be written
 // to. A database kept there lives for as long as one function instance does, which is
 // enough to look at the site but not to keep orders. See the README.
@@ -14,7 +17,7 @@ const DEFAULT_DB_PATH = process.env.VERCEL ? path.join(os.tmpdir(), 'pamuq.db') 
 
 const DB_PATH = process.env.DATABASE_PATH ? path.resolve(process.env.DATABASE_PATH) : DEFAULT_DB_PATH;
 
-// Used when a colour in the seed data does not say how many units are in stock.
+// Used when a color in the catalog does not say how many units are in stock.
 const DEFAULT_STOCK = 40;
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -36,16 +39,11 @@ db.exec(`
     position    INTEGER NOT NULL DEFAULT 0
   );
 
-  CREATE TABLE IF NOT EXISTS meta (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-
-  -- One row per purchasable colour. The sku doubles as the cart item id.
+  -- One row per purchasable color. The sku doubles as the cart item id.
   CREATE TABLE IF NOT EXISTS variants (
     sku        TEXT    PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    colour     TEXT    NOT NULL,
+    color      TEXT    NOT NULL,
     family     TEXT    NOT NULL,
     swatch     TEXT    NOT NULL,
     image      TEXT    NOT NULL,
@@ -54,15 +52,6 @@ db.exec(`
     position   INTEGER NOT NULL DEFAULT 0
   );
   CREATE INDEX IF NOT EXISTS variants_product ON variants (product_id);
-
-  CREATE TABLE IF NOT EXISTS gallery_images (
-    id         INTEGER PRIMARY KEY,
-    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    url        TEXT    NOT NULL,
-    alt        TEXT    NOT NULL,
-    position   INTEGER NOT NULL DEFAULT 0
-  );
-  CREATE INDEX IF NOT EXISTS gallery_product ON gallery_images (product_id);
 
   CREATE TABLE IF NOT EXISTS orders (
     id                INTEGER PRIMARY KEY,
@@ -77,7 +66,7 @@ db.exec(`
     subtotal          INTEGER NOT NULL,
     shipping          INTEGER NOT NULL DEFAULT 0,
     total             INTEGER NOT NULL,
-    currency          TEXT    NOT NULL DEFAULT 'gbp',
+    currency          TEXT    NOT NULL DEFAULT 'usd',
     emailed_at        TEXT,
     created_at        TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   );
@@ -87,51 +76,68 @@ db.exec(`
     email      TEXT NOT NULL UNIQUE COLLATE NOCASE,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   );
+
+  -- Reviews sent from product pages, waiting to be checked and published. Every genuine
+  -- review is published whatever its rating.
+  CREATE TABLE IF NOT EXISTS review_submissions (
+    id           INTEGER PRIMARY KEY,
+    product_slug TEXT    NOT NULL,
+    rating       INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    title        TEXT    NOT NULL,
+    body         TEXT    NOT NULL,
+    name         TEXT    NOT NULL,
+    email        TEXT    NOT NULL,
+    location     TEXT,
+    color        TEXT,
+    created_at   TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS contact_messages (
+    id           INTEGER PRIMARY KEY,
+    name         TEXT NOT NULL,
+    email        TEXT NOT NULL,
+    order_number TEXT,
+    message      TEXT NOT NULL,
+    created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
 
 // Columns added after the first release. A database made by an earlier version gains
-// them here, and the next seed fills them in.
-const PRODUCT_COLUMNS = {
-  category: "TEXT NOT NULL DEFAULT ''",
-  kind: "TEXT NOT NULL DEFAULT 'item'",
-  summary: "TEXT NOT NULL DEFAULT ''",
-  material: "TEXT NOT NULL DEFAULT ''",
-  weave: "TEXT NOT NULL DEFAULT ''",
-  collection: "TEXT NOT NULL DEFAULT ''",
-  feel: "TEXT NOT NULL DEFAULT ''",
-  featured: 'INTEGER NOT NULL DEFAULT 0',
-  contents: "TEXT NOT NULL DEFAULT '[]'",
-  image: "TEXT NOT NULL DEFAULT ''",
-  image_alt: "TEXT NOT NULL DEFAULT ''",
-};
-
-const existingColumns = new Set(db.prepare('PRAGMA table_info(products)').all().map((column) => column.name));
-for (const [name, definition] of Object.entries(PRODUCT_COLUMNS)) {
-  if (!existingColumns.has(name)) db.exec(`ALTER TABLE products ADD COLUMN ${name} ${definition}`);
+// them here.
+function addColumns(table, columns) {
+  const existing = new Set(db.prepare(`PRAGMA table_info(${table})`).all().map((column) => column.name));
+  for (const [name, definition] of Object.entries(columns)) {
+    if (!existing.has(name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
+  }
 }
+
+// The variants table spelled its color column the British way before the US launch.
+const variantColumns = new Set(db.prepare('PRAGMA table_info(variants)').all().map((column) => column.name));
+if (variantColumns.has('colour')) db.exec('ALTER TABLE variants RENAME COLUMN colour TO color');
+
+addColumns('products', { kind: "TEXT NOT NULL DEFAULT 'item'" });
+addColumns('orders', { gift: 'TEXT' });
 
 const q = {
   countProducts: db.prepare('SELECT COUNT(*) AS n FROM products'),
   allProducts: db.prepare('SELECT * FROM products ORDER BY position, id'),
   productBySlug: db.prepare('SELECT * FROM products WHERE slug = ?'),
-  allVariants: db.prepare('SELECT * FROM variants ORDER BY product_id, position'),
+  allStock: db.prepare('SELECT sku, stock FROM variants'),
   variantsForProduct: db.prepare('SELECT * FROM variants WHERE product_id = ? ORDER BY position'),
-  allGallery: db.prepare('SELECT * FROM gallery_images ORDER BY product_id, position'),
-  galleryForProduct: db.prepare('SELECT * FROM gallery_images WHERE product_id = ? ORDER BY position'),
   variantBySku: db.prepare(`
-    SELECT v.sku, v.colour, v.image, v.image_alt, v.stock, p.slug, p.name, p.price, p.kind
+    SELECT v.sku, v.color, v.image, v.image_alt, v.stock, p.slug, p.name, p.price, p.kind
     FROM variants v JOIN products p ON p.id = v.product_id
     WHERE v.sku = ?
   `),
 
   upsertProduct: db.prepare(`
-    INSERT INTO products (
-      slug, name, price, description, dimensions, weight, new_arrival, position, category, kind,
-      summary, material, weave, collection, feel, featured, contents, image, image_alt
-    ) VALUES (
-      @slug, @name, @price, @description, @dimensions, @weight, @newArrival, @position, @category, @kind,
-      @summary, @material, @weave, @collection, @feel, @featured, @contents, @image, @imageAlt
-    )
+    INSERT INTO products (slug, name, price, description, dimensions, weight, new_arrival, position, kind)
+    VALUES (@slug, @name, @price, @description, @dimensions, @weight, @newArrival, @position, @kind)
     ON CONFLICT (slug) DO UPDATE SET
       name = excluded.name,
       price = excluded.price,
@@ -140,25 +146,15 @@ const q = {
       weight = excluded.weight,
       new_arrival = excluded.new_arrival,
       position = excluded.position,
-      category = excluded.category,
-      kind = excluded.kind,
-      summary = excluded.summary,
-      material = excluded.material,
-      weave = excluded.weave,
-      collection = excluded.collection,
-      feel = excluded.feel,
-      featured = excluded.featured,
-      contents = excluded.contents,
-      image = excluded.image,
-      image_alt = excluded.image_alt
+      kind = excluded.kind
   `),
   // Stock is deliberately left out of the update so that re-seeding never resets inventory.
   upsertVariant: db.prepare(`
-    INSERT INTO variants (sku, product_id, colour, family, swatch, image, image_alt, stock, position)
-    VALUES (@sku, @productId, @colour, @family, @swatch, @image, @imageAlt, @stock, @position)
+    INSERT INTO variants (sku, product_id, color, family, swatch, image, image_alt, stock, position)
+    VALUES (@sku, @productId, @color, @family, @swatch, @image, @imageAlt, @stock, @position)
     ON CONFLICT (sku) DO UPDATE SET
       product_id = excluded.product_id,
-      colour = excluded.colour,
+      color = excluded.color,
       family = excluded.family,
       swatch = excluded.swatch,
       image = excluded.image,
@@ -166,11 +162,6 @@ const q = {
       position = excluded.position
   `),
   deleteVariant: db.prepare('DELETE FROM variants WHERE sku = ?'),
-  deleteGallery: db.prepare('DELETE FROM gallery_images WHERE product_id = ?'),
-  insertGallery: db.prepare(`
-    INSERT INTO gallery_images (product_id, url, alt, position)
-    VALUES (@productId, @url, @alt, @position)
-  `),
   deleteProduct: db.prepare('DELETE FROM products WHERE id = ?'),
 
   orderBySession: db.prepare('SELECT * FROM orders WHERE stripe_session_id = ?'),
@@ -179,16 +170,24 @@ const q = {
   insertOrder: db.prepare(`
     INSERT INTO orders (
       order_number, stripe_session_id, email, customer_name, phone, shipping_name,
-      shipping_address, items, subtotal, shipping, total, currency
+      shipping_address, items, subtotal, shipping, total, currency, gift
     ) VALUES (
       @orderNumber, @stripeSessionId, @email, @name, @phone, @shippingName,
-      @shippingAddress, @items, @subtotal, @shipping, @total, @currency
+      @shippingAddress, @items, @subtotal, @shipping, @total, @currency, @gift
     )
   `),
   decrementStock: db.prepare('UPDATE variants SET stock = MAX(stock - ?, 0) WHERE sku = ?'),
   markEmailed: db.prepare("UPDATE orders SET emailed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?"),
 
   addSubscriber: db.prepare('INSERT OR IGNORE INTO subscribers (email) VALUES (?)'),
+  addReview: db.prepare(`
+    INSERT INTO review_submissions (product_slug, rating, title, body, name, email, location, color)
+    VALUES (@productSlug, @rating, @title, @body, @name, @email, @location, @color)
+  `),
+  addMessage: db.prepare(`
+    INSERT INTO contact_messages (name, email, order_number, message)
+    VALUES (@name, @email, @orderNumber, @message)
+  `),
 
   getMeta: db.prepare('SELECT value FROM meta WHERE key = ?'),
   setMeta: db.prepare('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value'),
@@ -200,54 +199,6 @@ function slugify(text) {
     .replace(/&/g, ' ')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-}
-
-function groupBy(rows, key) {
-  const groups = new Map();
-  for (const row of rows) {
-    if (!groups.has(row[key])) groups.set(row[key], []);
-    groups.get(row[key]).push(row);
-  }
-  return groups;
-}
-
-function toVariant(row) {
-  return {
-    sku: row.sku,
-    colour: row.colour,
-    family: row.family,
-    swatch: row.swatch.split(','),
-    image: row.image,
-    imageAlt: row.image_alt,
-    stock: row.stock,
-  };
-}
-
-function toProduct(row, variants, gallery) {
-  return {
-    id: row.id,
-    slug: row.slug,
-    name: row.name,
-    price: row.price,
-    description: row.description,
-    dimensions: row.dimensions,
-    weight: row.weight,
-    newArrival: row.new_arrival === 1,
-    category: row.category,
-    kind: row.kind,
-    isSet: row.kind === 'set',
-    summary: row.summary,
-    size: row.dimensions,
-    material: row.material,
-    weave: row.weave,
-    collection: row.collection,
-    feel: row.feel,
-    featured: row.featured === 1,
-    contents: JSON.parse(row.contents || '[]'),
-    image: { url: row.image, alt: row.image_alt },
-    variants: variants.map(toVariant),
-    gallery: gallery.map((image) => ({ url: image.url, alt: image.alt })),
-  };
 }
 
 function toOrder(row) {
@@ -265,6 +216,7 @@ function toOrder(row) {
     shipping: row.shipping,
     total: row.total,
     currency: row.currency,
+    gift: row.gift ? JSON.parse(row.gift) : null,
     emailedAt: row.emailed_at,
     createdAt: row.created_at,
   };
@@ -274,37 +226,18 @@ function countProducts() {
   return q.countProducts.get().n;
 }
 
-function listProducts() {
-  const variants = groupBy(q.allVariants.all(), 'product_id');
-  const gallery = groupBy(q.allGallery.all(), 'product_id');
-  return q.allProducts
-    .all()
-    .map((row) => toProduct(row, variants.get(row.id) || [], gallery.get(row.id) || []));
+// sku → units in stock, for every color of every product.
+function stockMap() {
+  return new Map(q.allStock.all().map((row) => [row.sku, row.stock]));
 }
 
-function listFeatured({ sets = false, limit = 4 } = {}) {
-  return listProducts()
-    .filter((product) => product.featured && product.isSet === sets)
-    .slice(0, limit);
-}
-
-function listCategory(category) {
-  return listProducts().filter((product) => product.category === category);
-}
-
-function getProduct(slug) {
-  const row = q.productBySlug.get(slug);
-  if (!row) return null;
-  return toProduct(row, q.variantsForProduct.all(row.id), q.galleryForProduct.all(row.id));
-}
-
-// Looks up one purchasable colour together with the price of its product.
+// Looks up one purchasable color together with the price of its product.
 function getVariant(sku) {
   const row = q.variantBySku.get(sku);
   if (!row) return null;
   return {
     sku: row.sku,
-    colour: row.colour,
+    color: row.color,
     image: row.image,
     imageAlt: row.image_alt,
     stock: row.stock,
@@ -315,9 +248,10 @@ function getVariant(sku) {
   };
 }
 
-// Makes the database match the given catalogue. Safe to run repeatedly: stock levels
-// and orders are never touched, only products, colours and images.
-const upsertCatalogue = db.transaction((products) => {
+// Makes the database match the catalog. Safe to run repeatedly: stock levels and orders
+// are never touched. Each product arrives with its colors already resolved to a sku and
+// a picture (see seed.js).
+const upsertCatalog = db.transaction((products) => {
   const keptSlugs = new Set();
 
   products.forEach((product, position) => {
@@ -326,49 +260,33 @@ const upsertCatalogue = db.transaction((products) => {
       slug: product.slug,
       name: product.name,
       price: product.price,
-      description: product.description,
-      dimensions: product.size,
-      weight: product.weight,
+      description: product.summary,
+      dimensions: JSON.stringify(product.size || null),
+      weight: product.gsm ? `${product.gsm} gsm` : '',
       newArrival: product.newArrival ? 1 : 0,
       position,
-      category: product.category,
       kind: product.kind,
-      summary: product.summary,
-      material: product.material,
-      weave: product.weave,
-      collection: product.collection,
-      feel: product.feel,
-      featured: product.featured ? 1 : 0,
-      contents: JSON.stringify(product.contents || []),
-      image: product.image.url,
-      imageAlt: product.image.alt,
     });
     const { id: productId } = q.productBySlug.get(product.slug);
 
     const keptSkus = new Set();
-    product.colours.forEach((colour, colourPosition) => {
-      const sku = `${product.slug}-${slugify(colour.name)}`;
-      keptSkus.add(sku);
+    product.variants.forEach((variant, colorPosition) => {
+      keptSkus.add(variant.sku);
       q.upsertVariant.run({
-        sku,
+        sku: variant.sku,
         productId,
-        colour: colour.name,
-        family: colour.family,
-        swatch: colour.swatch.join(','),
-        image: colour.image,
-        imageAlt: colour.imageAlt,
-        stock: colour.stock ?? DEFAULT_STOCK,
-        position: colourPosition,
+        color: variant.color,
+        family: variant.key,
+        swatch: variant.swatch.join(','),
+        image: variant.image,
+        imageAlt: variant.imageAlt,
+        stock: variant.stock ?? DEFAULT_STOCK,
+        position: colorPosition,
       });
     });
     for (const variant of q.variantsForProduct.all(productId)) {
       if (!keptSkus.has(variant.sku)) q.deleteVariant.run(variant.sku);
     }
-
-    q.deleteGallery.run(productId);
-    product.gallery.forEach((image, imagePosition) => {
-      q.insertGallery.run({ productId, url: image.url, alt: image.alt, position: imagePosition });
-    });
   });
 
   for (const row of q.allProducts.all()) {
@@ -402,6 +320,7 @@ const recordOrder = db.transaction((data) => {
     shipping: data.shipping,
     total: data.total,
     currency: data.currency,
+    gift: data.gift ? JSON.stringify(data.gift) : null,
   });
   for (const item of data.items) {
     if (item.sku) q.decrementStock.run(item.quantity, item.sku);
@@ -423,13 +342,21 @@ function addSubscriber(email) {
   return q.addSubscriber.run(email).changes === 1;
 }
 
-function catalogueVersion() {
-  const row = q.getMeta.get('catalogue_version');
+function addReviewSubmission(review) {
+  q.addReview.run(review);
+}
+
+function addContactMessage(message) {
+  q.addMessage.run(message);
+}
+
+function catalogVersion() {
+  const row = q.getMeta.get('catalog_version');
   return row ? Number(row.value) : 0;
 }
 
-function setCatalogueVersion(version) {
-  q.setMeta.run('catalogue_version', String(version));
+function setCatalogVersion(version) {
+  q.setMeta.run('catalog_version', String(version));
 }
 
 function close() {
@@ -438,18 +365,18 @@ function close() {
 
 module.exports = {
   DB_PATH,
+  slugify,
   countProducts,
-  listProducts,
-  listFeatured,
-  listCategory,
-  getProduct,
+  stockMap,
   getVariant,
-  upsertCatalogue,
+  upsertCatalog,
   recordOrder,
   getOrder,
   markOrderEmailed,
   addSubscriber,
-  catalogueVersion,
-  setCatalogueVersion,
+  addReviewSubmission,
+  addContactMessage,
+  catalogVersion,
+  setCatalogVersion,
   close,
 };
