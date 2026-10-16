@@ -13,7 +13,7 @@ const seo = require('./lib/seo');
 const shipping = require('./lib/shipping');
 const checkout = require('./lib/checkout');
 const { subscribe } = require('./lib/subscribe');
-const { sendSupportMessage } = require('./email');
+const { sendSupportMessage, sendReviewNotice } = require('./email');
 const { render, pageData, absoluteUrl, SITE_URL, PORT, IS_PRODUCTION, campaignLive, orderByLine } = require('./lib/render');
 const { imageTag, pictureTag, imageUrl, shareUrl } = require('./lib/images');
 const markup = require('./lib/markup');
@@ -236,6 +236,33 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(PUBLIC_DIR, { index: false, maxAge: IS_PRODUCTION ? '1d' : 0 }));
+
+// Before the first request, the database is brought up to date: a fresh database, or one
+// seeded from an older catalog, is loaded from catalog.js (stock levels and orders are
+// kept). Every request then has current stock. If the database cannot be reached, pages
+// still render from catalog.js and anything that needs the database reports an error.
+const { seed, CATALOG_VERSION } = require('./seed');
+
+let booted = null;
+function boot() {
+  booted ??= (async () => {
+    if ((await db.countProducts()) === 0 || (await db.catalogVersion()) < CATALOG_VERSION) await seed();
+  })().catch((error) => {
+    booted = null;
+    throw error;
+  });
+  return booted;
+}
+
+app.use(async (req, res, next) => {
+  try {
+    await boot();
+    await store.refreshStock();
+  } catch (error) {
+    console.error(`The database (${db.NAME}) could not be read: ${error.message}`);
+  }
+  next();
+});
 
 // Stripe signs the exact bytes it sends, so this route needs the raw body. It is
 // registered with its own parser and no other route reads the body before it.
@@ -722,7 +749,7 @@ app.get('/cart', (req, res) => {
 // session is built from database prices. Browsers that submit a plain form are
 // redirected straight to Stripe, while the cart page's own fetch asks for JSON.
 app.post('/checkout', ...formParsers('20kb'), async (req, res) => {
-  const priced = checkout.priceCart(checkout.readCart(req.body));
+  const priced = await checkout.priceCart(checkout.readCart(req.body));
   const session = await checkout.createCheckoutSession(priced, checkout.readGift(req.body));
   if (!session.url) throw new HttpError(502, 'Stripe did not return a checkout address.');
 
@@ -996,24 +1023,35 @@ app.post('/contact', ...formParsers('10kb'), async (req, res) => {
   if (!name) throw new HttpError(400, 'Please tell us your name.');
   if (message.length < 2) throw new HttpError(400, 'Please write your message.');
 
-  db.addContactMessage({ name, email, orderNumber: orderNumber || null, message });
-  let delivered;
-  try {
-    delivered = await sendSupportMessage({ name, email, orderNumber, message });
-  } catch (error) {
-    console.error(`Contact message could not be emailed: ${error.message}`);
-    delivered = { sent: false };
-  }
-  if (!delivered.sent) {
-    console.error('Contact message saved but not emailed: set RESEND_API_KEY and SUPPORT_EMAIL.');
-    throw new HttpError(503, 'Our inbox is not connected yet, so we could not send your message. Please try again soon.');
-  }
+  const kept = await keep({ name, email, orderNumber: orderNumber || null, message }, db.addContactMessage, sendSupportMessage, 'Contact message');
+  if (!kept) throw new HttpError(503, 'Our inbox is not connected yet, so we could not send your message. Please try again soon.');
   res.json({ ok: true });
 });
 
+// Stores a form submission and emails it to the support address, and says whether it
+// reached the team. A contact message needs the email, because someone has to reply. A
+// review only needs to be kept somewhere that lasts (not Vercel's temporary folder).
+async function keep(data, save, send, label, { savedIsEnough = false } = {}) {
+  let saved = false;
+  try {
+    await save(data);
+    saved = db.DURABLE;
+  } catch (error) {
+    console.error(`${label} could not be saved: ${error.message}`);
+  }
+  try {
+    if ((await send(data)).sent) return true;
+    console.error(`${label} was not emailed: set RESEND_API_KEY and SUPPORT_EMAIL.`);
+  } catch (error) {
+    console.error(`${label} could not be emailed: ${error.message}`);
+  }
+  return savedIsEnough && saved;
+}
+
 // TODO: connect a review provider (Judge.me, Okendo, Yotpo or Stamped). Until then,
-// submissions are kept in SQLite for the team to check and publish to data/reviews.json.
-app.post('/reviews', ...formParsers('10kb'), (req, res) => {
+// submissions are stored in the database and emailed to the support address, for the team
+// to check and publish to data/reviews.json.
+app.post('/reviews', ...formParsers('10kb'), async (req, res) => {
   if (isBot(req.body)) return res.json({ ok: true });
   const productSlug = cleanText(req.body?.product, 80);
   if (!store.getProduct(productSlug)) throw new HttpError(400, 'That product could not be found.');
@@ -1025,8 +1063,9 @@ app.post('/reviews', ...formParsers('10kb'), (req, res) => {
   if (!body) throw new HttpError(400, 'Please write your review.');
   if (!name) throw new HttpError(400, 'Please tell us your name.');
   const email = readEmail(req.body?.email);
-  db.addReviewSubmission({
+  const review = {
     productSlug,
+    productName: store.getProduct(productSlug).name,
     rating,
     title,
     body,
@@ -1034,7 +1073,9 @@ app.post('/reviews', ...formParsers('10kb'), (req, res) => {
     email,
     location: cleanText(req.body?.location, 80) || null,
     color: cleanText(req.body?.color, 60) || null,
-  });
+  };
+  const kept = await keep(review, ({ productName, ...row }) => db.addReviewSubmission(row), sendReviewNotice, 'Review', { savedIsEnough: true });
+  if (!kept) throw new HttpError(503, 'We could not send your review just now. Please try again soon.');
   res.json({ ok: true });
 });
 
@@ -1211,13 +1252,6 @@ app.use((error, req, res, next) => {
     )
   );
 });
-
-// A fresh database, or one seeded from an older catalog, is loaded from catalog.js.
-// Stock levels and orders are kept.
-{
-  const { seed, CATALOG_VERSION } = require('./seed');
-  if (db.countProducts() === 0 || db.catalogVersion() !== CATALOG_VERSION) seed();
-}
 
 // Started with `node server.js` the app listens on a port. When api/index.js requires it
 // on Vercel it is handed over as a function instead, and nothing listens.
