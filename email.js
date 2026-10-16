@@ -248,4 +248,35 @@ async function sendSupportMessage({ name, email, orderNumber, message }) {
   return { sent: true };
 }
 
-module.exports = { sendOrderConfirmation, sendSupportMessage, buildOrderEmail };
+// Sends a review from a product page to the support address, to check and publish.
+// Resolves to { sent: false } when email is not set up.
+async function sendReviewNotice({ productName, productSlug, rating, title, body, name, email, location, color }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = config.support.email;
+  if (!apiKey || !to) return { sent: false };
+
+  const from = process.env.EMAIL_FROM || DEFAULT_FROM;
+  const text = [
+    `${productName} (${productSlug})`,
+    `Rating: ${rating} of 5`,
+    `From: ${name} <${email}>${location ? `, ${location}` : ''}`,
+    color ? `Color: ${color}` : '',
+    '',
+    title,
+    body,
+    '',
+    'To publish it, add it to data/reviews.json. Every genuine review is published, whatever its rating.',
+  ]
+    .filter((line, index, lines) => line || lines[index - 1])
+    .join('\n');
+  const response = await fetch(RESEND_ENDPOINT, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from, to: [to], reply_to: email, subject: `New review: ${productName}, ${rating} of 5`, text }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) throw new Error(`Resend responded with ${response.status}`);
+  return { sent: true };
+}
+
+module.exports = { sendOrderConfirmation, sendSupportMessage, sendReviewNotice, buildOrderEmail };
