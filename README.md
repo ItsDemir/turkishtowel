@@ -1,6 +1,6 @@
 # Pamuq
 
-A direct to consumer store for luxury Turkish towels, sold in the US. The towels are woven from 100% Turkish cotton in Denizli, Turkey, and the brand takes its mood from Bodrum on the Aegean coast. It is a small stack that you own end to end: plain HTML, CSS and JavaScript in the browser, a thin Node and Express server, Stripe Checkout for payment, Resend for order and support emails and a single SQLite file for orders and stock. There is no Shopify, no WooCommerce and no platform fee.
+A direct to consumer store for luxury Turkish towels, sold in the US. The towels are woven from 100% Turkish cotton in Denizli, Turkey, and the brand takes its mood from Bodrum on the Aegean coast. It is a small stack that you own end to end: plain HTML, CSS and JavaScript in the browser, a thin Node and Express server, Stripe Checkout for payment, Resend for order and support emails, and SQLite (a local file, or Turso in the cloud) for orders and stock. There is no Shopify, no WooCommerce and no platform fee.
 
 The live site is https://turkishtowel.vercel.app.
 
@@ -87,7 +87,7 @@ cp .env.example .env
 npm start
 ```
 
-Then open http://localhost:3000. The site works without any keys, so you can browse it first. `npm run dev` restarts on file changes and `npm test` runs the smoke tests.
+Then open http://localhost:3000. The site works without any keys, so you can browse it first. `npm run dev` restarts on file changes and `npm test` runs the tests.
 
 The server seeds an empty database by itself and re-seeds whenever `CATALOG_VERSION` is higher than the one the database was seeded with. `npm run seed` does the same by hand. Seeding never touches stock levels or orders.
 
@@ -98,16 +98,17 @@ The server seeds an empty database by itself and re-seeds whenever `CATALOG_VERS
 | `STRIPE_SECRET_KEY` | Checkout. Starts with `sk_test_` or `sk_live_`. |
 | `STRIPE_WEBHOOK_SECRET` | The `/webhook` endpoint. Starts with `whsec_`. |
 | `STRIPE_AUTOMATIC_TAX` | Set to `1` after turning on Stripe Tax in the Dashboard, so sales tax is calculated at checkout. |
-| `RESEND_API_KEY` | Order confirmations and contact form messages. |
+| `RESEND_API_KEY` | Order confirmations, contact form messages and review submissions. |
 | `EMAIL_FROM` | The sender, on a domain verified in Resend, for example `Pamuq <orders@pamuq.com>`. |
-| `SUPPORT_EMAIL` | Shown on the contact page and policies, and where contact form messages are sent. |
+| `SUPPORT_EMAIL` | Shown on the contact page and policies, and where contact form messages and review submissions are sent. The contact form only works once this and `RESEND_API_KEY` are set. |
 | `COMPANY_LEGAL_NAME` | Used in the terms and privacy policy. |
 | `COMPANY_ADDRESS` | The business mailing address. Required by CAN-SPAM in every marketing email. |
-| `KLAVIYO_API_KEY`, `KLAVIYO_LIST_ID` | Optional. Newsletter sign ups are always kept in SQLite and are also added to this Klaviyo list when set. |
+| `KLAVIYO_API_KEY`, `KLAVIYO_LIST_ID` | Newsletter sign ups are kept in the database and also added to this Klaviyo list. See Email sign ups below. |
 | `VERCEL_ANALYTICS` | Set to `1` after turning on Web Analytics in the Vercel project. |
 | `IMAGE_OPTIMIZER` | Set to `off` to stop routing photos through Vercel Image Optimization. |
 | `SITE_URL` | The public https address, used in Stripe return links, emails, canonical links and the sitemap. |
-| `DATABASE_PATH` | Where the SQLite file lives. Defaults to `pamuq.db`. |
+| `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Keep orders, stock, sign ups, reviews and messages in Turso. Needed on Vercel for anything to last. See Database below. |
+| `DATABASE_PATH` | Where the SQLite file lives when Turso is not set. Defaults to `pamuq.db`. |
 | `PORT` | Defaults to 3000. |
 
 ## Stripe
@@ -141,7 +142,7 @@ On Vercel every photo, local or remote, is served through Vercel Image Optimizat
 
 ## Reviews
 
-Reviews are read from `data/reviews.json` through the adapter in `lib/reviews.js`. The file ships empty. Reviews submitted on the site are stored in SQLite for you to check and are not published automatically. Moving to Judge.me, Okendo, Yotpo or Stamped only means rewriting `load()` in the adapter. Product structured data includes a rating only when real reviews exist.
+Reviews are read from `data/reviews.json` through the adapter in `lib/reviews.js`. The file ships empty. Reviews submitted on the site are emailed to `SUPPORT_EMAIL` and stored in the database for you to check. They are not published automatically: add them to `data/reviews.json`, whatever their rating. Moving to Judge.me, Okendo, Yotpo or Stamped only means rewriting `load()` in the adapter. Product structured data includes a rating only when real reviews exist.
 
 ## Analytics
 
@@ -151,7 +152,30 @@ Reviews are read from `data/reviews.json` through the adapter in `lib/reviews.js
 
 The site runs on Vercel from `main`. `api/index.js` hands the Express app to Vercel as one function, `vercel.json` routes every request that is not a file in `public/` to it, and the build step regenerates the photo manifest.
 
-Vercel functions have no lasting disk, so SQLite lives in the temporary folder and starts fresh on each instance. Pages, the cart and checkout all work, and orders are still recorded in Stripe and emailed, but the order table, newsletter sign ups, review submissions and contact messages are not kept. Before taking real orders, move that data to a hosted database (Vercel Postgres, Neon, Turso or Supabase) or run the server on a host with a persistent disk (Railway, Render or Fly.io, with `DATABASE_PATH` on a volume).
+Vercel functions have no lasting disk. Without Turso, the database lives in the temporary folder and starts fresh on each instance: pages, the cart and checkout all work, orders are still in Stripe and emailed, and messages and reviews are still emailed, but nothing is kept in the database. Set up Turso before taking real orders.
+
+## Database
+
+The store keeps stock, orders, newsletter sign ups, review submissions and contact messages in SQLite. Locally that is the file `pamuq.db`. In production it is [Turso](https://turso.tech), which is SQLite in the cloud, so the same tables and queries work in both places, and every Vercel instance shares one database.
+
+To set it up:
+
+1. Create a free account at turso.tech and create a database. A US East location is closest to Vercel's default region.
+2. Copy the database URL (it starts with `libsql://`) and create a token for it.
+3. In the Vercel project, under Settings and Environment Variables, add `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`, then redeploy.
+
+On its first request the site creates the tables and loads the catalog by itself. Stock levels and orders are never reset by a later deploy: bump `CATALOG_VERSION` in `catalog.js` after changing products, and the next deploy updates names, prices and colors only. Turso's command line shell (`turso db shell`) lets you look at the tables, and `npm run seed` also works against Turso when the two variables are set locally.
+
+Orders are stored together with the stock they take in one transaction, so the Stripe webhook and the confirmation page can arrive at the same moment on different instances and the order is still kept once. Pages read stock from a cache of up to 30 seconds, and checkout always reads it fresh.
+
+## Email sign ups
+
+Every sign up on the site is saved in the database and sent to Klaviyo. To connect it:
+
+1. Create a Klaviyo account and a list, for example "Newsletter". Its list ID is in the list's settings.
+2. Under Settings and API keys, create a private key with write access to Lists, Profiles and Subscriptions.
+3. Add `KLAVIYO_API_KEY` and `KLAVIYO_LIST_ID` in Vercel and redeploy.
+4. In Klaviyo, build a welcome flow triggered by joining that list, with the `WELCOME10` code, and add `COMPANY_ADDRESS` to the email footer. The same code must exist as a promotion code in Stripe.
 
 ## Project layout
 
@@ -160,10 +184,10 @@ server.js              routes
 config.js              every business setting
 catalog.js             categories, weaves, colors, products, sets, prices and stock photos
 store.js               products as the pages see them: catalog plus stock, photos and reviews
-db.js                  SQLite: stock, orders, subscribers, review submissions, messages
-email.js               order confirmation and contact form emails through Resend
+db.js                  the database (a SQLite file or Turso): stock, orders, sign ups, reviews, messages
+email.js               order confirmation, contact form and review emails through Resend
 format.js              prices, sizes, dates and HTML escaping
-seed.js                loads the catalog into SQLite
+seed.js                loads the catalog into the database
 content/faq.js         the FAQ, also used for FAQPage structured data
 data/reviews.json      published reviews (empty)
 lib/
@@ -176,7 +200,7 @@ lib/
   subscribe.js         newsletter sign ups and Klaviyo
   render.js, markup.js templates and shared markup
 scripts/photos.js      writes public/products/manifest.json
-test/smoke.test.js     smoke tests (npm test)
+test/                  smoke and database tests (npm test)
 docs/                  the image style guide
 api/index.js           the Vercel entry point
 public/

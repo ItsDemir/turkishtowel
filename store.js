@@ -1,7 +1,7 @@
 'use strict';
 
 // The products as the pages see them: the words and pictures from catalog.js, live stock
-// from SQLite, real photos from public/products and review summaries.
+// from the database, real photos from public/products and review summaries.
 
 const db = require('./db');
 const photos = require('./lib/photos');
@@ -37,14 +37,40 @@ function build(product, stock) {
   };
 }
 
+// Stock levels are read before each request (see server.js) and kept for a short while,
+// so that pages do not wait on a remote database every time. Checkout always reads fresh
+// stock. A local file is fast enough to read every time.
+const STOCK_TTL = db.REMOTE ? 30 * 1000 : 0;
+let stock = null;
+let stockAt = 0;
+let loading = null;
+
+function refreshStock() {
+  if (stock && Date.now() - stockAt < STOCK_TTL) return Promise.resolve();
+  loading ??= db
+    .stockMap()
+    .then((map) => {
+      stock = map;
+      stockAt = Date.now();
+    })
+    .finally(() => {
+      loading = null;
+    });
+  return loading;
+}
+
+// After an order, so that the next page shows the new stock.
+function forgetStock() {
+  stockAt = 0;
+}
+
 function listProducts() {
-  const stock = db.stockMap();
   return PRODUCTS.map((product) => build(product, stock));
 }
 
 function getProduct(slug) {
   const product = PRODUCTS.find((entry) => entry.slug === slug);
-  return product ? build(product, db.stockMap()) : null;
+  return product ? build(product, stock) : null;
 }
 
 // The first photo of a color: its own, or the product's.
@@ -66,4 +92,4 @@ function forSeeding() {
   });
 }
 
-module.exports = { listProducts, getProduct, imagesFor, forSeeding, CATEGORIES, OCCASIONS, WEAVES };
+module.exports = { listProducts, getProduct, imagesFor, forSeeding, refreshStock, forgetStock, CATEGORIES, OCCASIONS, WEAVES };
